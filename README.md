@@ -42,3 +42,24 @@ The mapping json is located in the package
 
 Class to load PMT positions, directions and calculate time of flight.
 
+## Beam monitor PID
+
+This code performs the 1pe calibration of the ACT PMTs as well as the *basic* event PID based on monitor information (TOF, 
+charge deposited in ACTs, etc...). 
+The beam PID code is called by the notebooks/WCTE_beam_analysis.ipynb notebook, which in turn calls 
+the BeamAnalysis class living in the notebooks/beam_monitors_pid.py python script.  
+
+All the plots needed for visualising the selection are saved under  
+notebooks/plots and any user of the code should refer to them for sanity checks, an example is provided. The
+outputs of the selection are saved in a separate root file called beam_analysis_output_R{run_number}.root
+
+The code also calculates the mean momentum for each particle type before exiting the CERN beam pipe (upstream of T0) 
+and right after exiting the WCTE beam window (i.e. into the tank). These momenta are also estimated for each trigger,
+based on the estimated PID. Note the error on these momenta (propagated from the time of flight resultion, taken as the
+standard deviation of the TOF distribution for electrons) is very large for slow particles. Protons and deuterons events are 
+identified using their time of flight but 3He nuclei aren't. The total charge in the TOF detector is saved in the output file but
+no cut is placed on it. The "is_kept" branch of the output file stores information on whether the trigger passes the basic beam
+requirements (no hits above threshold in the hole counters, hits in all T0, T1, T2 PMTs etc...)
+
+The next version of this code will include additional tools for performing PID, helpful for analyses with tighter PID requirements
+and some form of PID likelihood useful for estimating the confidence we have in each particle identification. 
