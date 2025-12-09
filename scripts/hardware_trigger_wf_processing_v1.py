@@ -165,7 +165,7 @@ if __name__ == "__main__":
             config_tree = outfile.mktree("Configuration", {
                 "bad_channel_mask_card_chan": "var * int32",
                 "assumed_waveform_length": "int32",
-                "   ": "string"
+                "git_hash": "string"
             })
             
             batch_size = 1000
