@@ -169,6 +169,10 @@ if __name__ == "__main__":
                 #open the input file in batches
                 for start in range(0, total_entries, batch_size):  
                     stop = min(start + batch_size, total_entries)
+                    
+                    # if start>=5000:
+                    #     print("Stopping after 5000 events for testing")
+                    #     break
                     print(f"Loading entries {start} → {stop}")
                     start_batch = time.time()
                     #open the events in a batch
