@@ -1,2 +1,29 @@
 # python related
 *.pyc
+
+# Ignore all data files
+*.root
+*.pkl
+*.npz
+*.json
+
+# Ignore Python cache folders
+__pycache__/
+
+analysis_tools.egg-info/
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+#ignore credential files
+.wctecaldb.credential*
+
+#ignore setup shell scripts
+*.sh
+
+#ignore batch scripts
+scripts/batchScripts/
+
+#dirty fix to clean the git repo 
+crossing_muon_study/
+
