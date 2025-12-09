@@ -127,8 +127,6 @@ def determine_short_waveform_list(wf_waveforms,wf_card,wf_chan):
 if __name__ == "__main__":
     
     git_hash = get_git_descriptor()
-    print("Git hash:",git_hash)
-    input()
     
     parser = argparse.ArgumentParser(description="Add a new branch to a ROOT TTree in batches.")
     parser.add_argument("-i","--input_files",nargs='+', help="Path to input ROOT file or files")
@@ -167,7 +165,7 @@ if __name__ == "__main__":
             config_tree = outfile.mktree("Configuration", {
                 "bad_channel_mask_card_chan": "var * int32",
                 "assumed_waveform_length": "int32",
-                "git_hash": "string"
+                "   ": "string"
             })
             
             batch_size = 1000
