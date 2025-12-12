@@ -15,16 +15,6 @@ from analysis_tools import PMTMapping
 from enum import Flag, auto
 import subprocess
 
-class HitMask(Flag):
-    STABLE_CHANNEL = 0    
-    NO_TIMING_CONSTANT = 1 
-    SLOW_CONTROL_EXCLUDED = 2 
-
-class TriggerMask(Flag):
-    STABLE_TRIGGER = 0    
-    PERIODIC_67_ISSUE = 1 
-    SLOW_CONTROL_EXCLUDED = 2 
-
 def get_git_descriptor():
     try:
         # Get commit hash / tag
