@@ -139,7 +139,7 @@ def get_67ms_mask(run_number_str:str, trigger_times:np.ndarray):
     if int(run_number_str)<1841:
         periodic_67ms_missing = trigger_times%67108864>1e7
     else:
-        periodic_67ms_missing = np.ones(len(trigger_times))
+        periodic_67ms_missing = np.ones(len(trigger_times), dtype=bool)
     #these masks are 1 if no problem and 0 if issue
     return  periodic_67ms_missing
      
@@ -290,7 +290,6 @@ if __name__ == "__main__":
                         #trigger level flags
                         sc_good_trigger_mask = get_slow_control_trigger_mask(args.run_number,readout_window_events["window_time"].to_numpy(),run_data)
                         periodic_67ms_missing_mask = get_67ms_mask(args.run_number,readout_window_events["window_time"].to_numpy())
-                        
                         #make the trigger level bitmask 
                         trigger_mask = np.zeros_like(sc_good_trigger_mask, dtype=np.int32)                        
                         trigger_mask |= ~periodic_67ms_missing_mask * TriggerMask.PERIODIC_67_ISSUE.value
