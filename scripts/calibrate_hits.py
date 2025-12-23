@@ -238,4 +238,4 @@ if __name__ == "__main__":
     process_data(args.input_files, args.output_dir,config_dict, timing_offsets_glb_pmt_id, timing_offsets_values, debug=args.debug)
     end = time.time()
     print(f"Process all data time: {end - start:.3f} seconds")
-    print("*** Script complete ***")
+    print("*** Calibrate hits script complete ***")

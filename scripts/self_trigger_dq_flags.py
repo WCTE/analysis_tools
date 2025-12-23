@@ -173,7 +173,7 @@ if __name__ == "__main__":
         calibrated_input_file_path = os.path.join(args.input_calibrated_file_directory, calibrated_file_name)
         calibrated_input_files.append(calibrated_input_file_path)
         if not os.path.exists(calibrated_input_file_path):
-            raise Exception(f"Calibrated input file {calibrated_input_file} does not exist")
+            raise Exception(f"Calibrated input file {calibrated_input_file_path} does not exist")
     
     #slow control file for good run list
     good_run_list_path = '/eos/experiment/wcte/configuration/slow_control_summary/all_run_list.json' 
@@ -324,4 +324,4 @@ if __name__ == "__main__":
     print("In total processed",run_total_triggers,"triggers with",run_total_bad_triggers,"bad triggers", f"{run_total_bad_triggers/run_total_triggers:.2%}")
     print("In total processed",run_total_hits,"hits with",run_total_bad_hits," bad hits", f"{run_total_bad_hits/run_total_hits:.2%}")
     
-    print("*** Script complete ***")
+    print("*** Self trigger DQ flags script complete ***")

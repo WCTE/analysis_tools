@@ -342,4 +342,4 @@ if __name__ == "__main__":
                     end_batch = time.time()
                     print(f"Time for full batch: {end_batch - start_batch:.6f} seconds")
 
-    print("*** Script complete ***")
+    print("*** Hardware trigger waveform processing script complete ***")
