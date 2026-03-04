@@ -175,3 +175,75 @@ def get_67ms_mask(run_number_str, trigger_times):
         return trigger_times % 67108864 > 1e7
     else:
         return np.ones(len(trigger_times), dtype=bool)
+
+
+# ── Production run info ────────────────────────────────────────────────────────
+RUN_INFO_JSON = "/eos/experiment/wcte/configuration/run_info/google_sheet_beam_data.json"
+
+def get_run_info(run_number):
+    """Read production-relevant run info from the run info JSON.
+
+    Derives trigger type and whether to run beam analysis from existing JSON fields:
+
+    trigger_type
+        'hw' if 'hardware' (case-insensitive) appears in run_config, else 'self'.
+
+    run_beam_analysis
+        False if 'tagged' (case-insensitive) appears in beam_config AND act0 == 'out'
+        (tagged photon/gamma mode — no beam monitors in beamline).
+        True otherwise (standard hadron/lepton beam run).
+        Raises ValueError if 'tagged' is in beam_config but act0 != 'out',
+        as this indicates an unexpected configuration.
+
+    Parameters
+    ----------
+    run_number : int or str
+
+    Returns
+    -------
+    dict with keys:
+        'trigger_type'       : 'hw' or 'self'
+        'run_beam_analysis'  : bool
+    """
+    run_number_str = str(run_number)
+
+    with open(RUN_INFO_JSON, 'r') as f:
+        runs = json.load(f)
+
+    run_entry = None
+    for run in runs:
+        if run.get("run_number") == run_number_str:
+            run_entry = run
+            break
+
+    if run_entry is None:
+        raise ValueError(f"Run {run_number} not found in {RUN_INFO_JSON}")
+
+    # Determine trigger type from run_config
+    run_config = run_entry.get("run_config", "")
+    trigger_type = "hw" if "hardware" in run_config.lower() else "self"
+
+    # Determine beam analysis type from beam_config and ACT configuration
+    beam_config = run_entry.get("beam_config", "")
+    act0        = run_entry.get("act0", "").lower()
+    act3        = run_entry.get("act3", "").lower()
+    act4        = run_entry.get("act4", "").lower()
+    act5        = run_entry.get("act5", "").lower()
+
+    if "tagged" in beam_config.lower():
+        if act0 == "out":
+            beam_analysis_type = "tagged_gamma"
+        else:
+            raise ValueError(
+                f"Run {run_number}: 'tagged' found in beam_config ('{beam_config}') "
+                f"but act0 is '{act0}' (expected 'out'). Check run configuration."
+            )
+    elif act3 == "out" or act4 == "out" or act5 == "out":
+        beam_analysis_type = "missing_act"
+    else:
+        beam_analysis_type = "normal"
+
+    return {
+        "trigger_type":       trigger_type,
+        "beam_analysis_type": beam_analysis_type,
+    }
