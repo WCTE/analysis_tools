@@ -25,7 +25,7 @@ class TriggerMask(Flag):
 
 def get_run_database_data(run_number):
 
-    json_path = '/eos/experiment/wcte/configuration/slow_control_summary/good_run_list.json'
+    json_path = '/eos/experiment/wcte/configuration/slow_control_summary/all_run_list.json'
 
     with open(json_path, 'r') as f:
         data = json.load(f)
@@ -38,7 +38,7 @@ def get_run_database_data(run_number):
        
 def get_stable_mpmt_list_slow_control(run_number):
 
-    json_path = '/eos/experiment/wcte/configuration/slow_control_summary/good_run_list.json'
+    json_path = '/eos/experiment/wcte/configuration/slow_control_summary/all_run_list.json'
 
     with open(json_path, 'r') as f:
         data = json.load(f)
@@ -55,7 +55,7 @@ def get_stable_mpmt_list_slow_control(run_number):
 
 def get_good_trigger_list_slow_control(data_root_file, run_number):
     
-    json_path = '/eos/experiment/wcte/configuration/slow_control_summary/good_run_list.json'
+    json_path = '/eos/experiment/wcte/configuration/slow_control_summary/all_run_list.json'
 
     with open(json_path, 'r') as f:
         good_run_data = json.load(f)

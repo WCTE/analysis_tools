@@ -50,7 +50,7 @@ class ReadBeamRunInfo:
             there_is_ACT5 = False
 
         if (target_run.get("lead_glass")=="IN"):
-            raise Exception(f"This beam analysis code is designed for runs where the lead_glass is out of the beamline, in run {run_number} it is {target_run.get("lead_glass")}")
+            raise Exception(f"This beam analysis code is designed for runs where the lead_glass is out of the beamline, in run {run_number} it is {target_run.get('lead_glass')}")
 
         if there_is_ACT5:
             if (target_run.get("act3") != target_run.get("act4") or target_run.get("act3")!= target_run.get("act5") or target_run.get("act4") != target_run.get("act5")):

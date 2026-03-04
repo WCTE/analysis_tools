@@ -1,0 +1,14 @@
+from enum import Flag, auto
+
+class HitMask(Flag):
+    STABLE_CHANNEL = 0    
+    NO_TIMING_CONSTANT = 1 
+    SLOW_CONTROL_EXCLUDED = 2
+
+class TriggerMask(Flag):
+    STABLE_TRIGGER = 0    
+    PERIODIC_67_ISSUE = 1 
+    SLOW_CONTROL_EXCLUDED = 2
+    MISSING_WAVEFORMS = 4
+    MISMATCHED_WAVEFORM_LENGTH = 8
+    MISSING_TRIGGER_SIGNAL = 16

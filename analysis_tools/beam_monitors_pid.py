@@ -1,5 +1,6 @@
 #this code holds the functions necessary for reading in the data and identifying the paticle types based on the WCTE beam monitors 
 
+import os
 import json
 from matplotlib.backends.backend_pdf import PdfPages
 import uproot
@@ -280,15 +281,20 @@ def fit_three_gaussians(entries, bin_centers):
 
 
 class BeamAnalysis:
-    def __init__(self, run_number, run_momentum, n_eveto, n_tagger, there_is_ACT5):
+    def __init__(self, run_number, run_momentum, n_eveto, n_tagger, there_is_ACT5, output_dir, pdf_name=None):
         #Store the run characteristics
         self.run_number, self.run_momentum = run_number, run_momentum
         self.n_eveto, self.n_tagger = n_eveto, n_tagger
         self.there_is_ACT5 = there_is_ACT5
+        self.output_dir = output_dir
         
-        self.pdf_global = PdfPages(f"../notebooks/plots/PID_run{run_number}_p{run_momentum}.pdf")
+        if pdf_name is None:
+            pdf_name = f"PID_run{run_number}_p{run_momentum}.pdf"
+        pdf_path = os.path.join(output_dir, pdf_name)
+        self.pdf_global = PdfPages(pdf_path)
         self.channel_mapping = {12: "ACT0-L", 13: "ACT0-R", 14: "ACT1-L", 15: "ACT1-R", 16: "ACT2-L", 17: "ACT2-R", 18: "ACT3-L", 19: "ACT3-R", 20: "ACT4-L", 21: "ACT4-R", 22: "ACT5-L", 23: "ACT5-R"}
         print("Initialised the BeamAnalysis instance")
+        print(f"Plots will be saved to {pdf_path}")
         
         
         
@@ -297,12 +303,14 @@ class BeamAnalysis:
     def end_analysis(self):
         self.pdf_global.close()
         
-    def open_file(self, n_events = -1, require_t5 = False, first_tdc_only = True, enforce_tdc_qdc_match = True):
+    def open_file(self, n_events = -1, require_t5 = False, first_tdc_only = True, enforce_tdc_qdc_match = True, input_file = None):
         '''Read in the data as a pandas dataframe, read in the TOF and the ACt information'''
         
         self.require_t5_hit = require_t5
         
-        file_path    = f"/eos/experiment/wcte/data/2025_commissioning/offline_data_vme_match/WCTE_offline_R{self.run_number}S0_VME_matched.root"
+        if input_file is None:
+            raise ValueError("input_file must be specified")
+        file_path = input_file
         tree_name    = "WCTEReadoutWindows"
 
         # Open the file and grab the tree
@@ -4283,7 +4291,7 @@ class BeamAnalysis:
      ################################################
      ### Here check using the tof which ones are the muons and which are the other
    
-        print(f"The difference between the muon TOF ({self.particle_tof_mean["electron"]} +/- {self.particle_tof_std["electron"]} ns) and the electron TOF ({self.particle_tof_mean["muon"]} +/- {self.particle_tof_std["muon"]} ns)")
+        print(f"The difference between the muon TOF ({self.particle_tof_mean['electron']} +/- {self.particle_tof_std['electron']} ns) and the electron TOF ({self.particle_tof_mean['muon']} +/- {self.particle_tof_std['muon']} ns)")
     
         
         mid_tof_e_mu = self.particle_tof_mean["electron"]+ 3 * self.particle_tof_std["electron"]
@@ -4421,11 +4429,11 @@ class BeamAnalysis:
         
         
         fig, ax = plt.subplots(figsize = (8, 6))
-        ax.plot(spill_index, number_e_per_spill, "x", label = f"Electrons ({sum(self.df["is_electron"])})")
-        ax.plot(spill_index, number_mu_per_spill, "x", label = f"Muons  ({sum(self.df["is_muon"])})")
-        ax.plot(spill_index, number_pi_per_spill, "x", label = f"Pions  ({sum(self.df["is_pion"])})")
-        ax.plot(spill_index, number_p_per_spill, "x", label = f"Protons  ({sum(self.df["is_proton"])})")
-        ax.plot(spill_index, number_D_per_spill, "x", label = f"Deuterons  ({sum(self.df["is_deuteron"])})")
+        ax.plot(spill_index, number_e_per_spill, "x", label = f"Electrons ({sum(self.df['is_electron'])})")
+        ax.plot(spill_index, number_mu_per_spill, "x", label = f"Muons  ({sum(self.df['is_muon'])})")
+        ax.plot(spill_index, number_pi_per_spill, "x", label = f"Pions  ({sum(self.df['is_pion'])})")
+        ax.plot(spill_index, number_p_per_spill, "x", label = f"Protons  ({sum(self.df['is_proton'])})")
+        ax.plot(spill_index, number_D_per_spill, "x", label = f"Deuterons  ({sum(self.df['is_deuteron'])})")
         ax.plot(spill_index_all, number_rejected_per_spill, "x", label = "Rejected triggers", color =  "darkgray")
         ax.set_ylabel("Number of particles", fontsize = 20)
         ax.set_xlabel("Spill index", fontsize = 20)
@@ -4516,7 +4524,7 @@ class BeamAnalysis:
         ax.set_ylabel("Number of triggers", fontsize=20)
         
         ax.legend(fontsize=20)
-        ax.set_title(f"Run {self.run_number} ({self.run_momentum} MeV/c) \n Ref times distribution, total number of spills {max(df_with_diffs["spill_number"])}")
+        ax.set_title(f"Run {self.run_number} ({self.run_momentum} MeV/c) \n Ref times distribution, total number of spills {max(df_with_diffs['spill_number'])}")
         self.pdf_global.savefig(fig)
         plt.close()
         
