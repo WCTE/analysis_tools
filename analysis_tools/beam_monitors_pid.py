@@ -1968,8 +1968,6 @@ class BeamAnalysis:
         
         if particle_name == "Helium3":
             factor = 36
-        if particle_name == "Tritium":
-            factor = 9
         if particle_name == "Lithium6":
             factor = 321
         
@@ -1977,11 +1975,11 @@ class BeamAnalysis:
         
         psp = psp.reset_index(drop=True) #so we can use index entries instead of float ones
         
-        g4_energy = psp["#Kinetic_energy [GeV]"].to_numpy() * 1e3 
+        g4_energy = psp["#Kinectic_energy [GeV]"].to_numpy() * 1e3 
 
         
         for step in range(n_step):
-            delta_L = dist/n_step
+            delta_L = dist/n_step 
             delta_t = self.TOF_particle_in_ns(particle_name, momentum, delta_L)
 
             total_tof += delta_t
@@ -1991,17 +1989,17 @@ class BeamAnalysis:
             #account for the momentum lost
             for i in range(len(momentum)):
                 p = np.argmin(np.abs(g4_energy - momentum[i]))  # index of closest value to the g4 energy
-                if p > len(psp["Total_st_pw [MeV/m]"])-2:
-                    p = len(psp["Total_st_pw [MeV/m]"])-2
+                if p > len(psp["Total_st_pw [MeV/mm]"])-2:
+                    p = len(psp["Total_st_pw [MeV/mm]"])-2
                     
 
                 particle_kinetic_energy = np.sqrt(momentum[i]**2 + masses[particle_name]**2) - masses[particle_name] 
 
 
                 #now modify the momentum 
-                stoppingPower = (psp["Total_st_pw [MeV/m]"].iloc[p+1] - psp["Total_st_pw [MeV/m]"].iloc[p]) / (psp["#Kinetic_energy [GeV]"][p+1] - psp["#Kinetic_energy [GeV]"].iloc[p]) * (particle_kinetic_energy *10**(-3) - psp["#Kinetic_energy [GeV]"].iloc[p]) + psp["Total_st_pw [MeV/m]"].iloc[p]
+                stoppingPower = (psp["Total_st_pw [MeV/mm]"].iloc[p+1] - psp["Total_st_pw [MeV/mm]"].iloc[p]) / (psp["#Kinectic_energy [GeV]"][p+1] - psp["#Kinectic_energy [GeV]"].iloc[p]) * (particle_kinetic_energy *10**(-3) - psp["#Kinectic_energy [GeV]"].iloc[p]) + psp["Total_st_pw [MeV/mm]"].iloc[p]
 
-                particle_kinetic_energy -= stoppingPower * factor * delta_L
+                particle_kinetic_energy -= stoppingPower * factor * delta_L * 1e3
 
                 momentum[i] = np.sqrt((particle_kinetic_energy + masses[particle_name])**2 - masses[particle_name]**2)
 
@@ -2034,16 +2032,13 @@ class BeamAnalysis:
                 p_name = "proton"
             if particle == "Deuteron":
                 p_name = "deuteron"
+            if particle == "Tritium":
+                p_name = "triton"
                 
         str_n_eveto = str(self.n_eveto)
         str_n_tagger = str(self.n_tagger)
         
-        #we have an issue: 1.075 reference table is yet available, instead we use 1.06
-        if self.n_tagger == 1.075:
-            str_n_tagger = str(1.06)
-        if self.n_eveto == 1.075:
-            str_n_eveto = str(1.06)
-        
+  
         # Read in the theoretical losses from G4 tables provided by Arturo
         losses_dataset_air = f"../include/{p_name}StoppingPowerAirGeant4.csv"
         losses_dataset_plasticScintillator = f"../include/{p_name}StoppingPowerPlasticScintillatorGeant4.csv"
@@ -2819,7 +2814,8 @@ class BeamAnalysis:
         particles_tof_names = {"Muons": "muon",
                                "Pions": "pion",
                                "Protons": "proton",
-                               "Deuteron": "deuteron"
+                               "Deuteron": "deuteron",
+                               "Tritium": "tritium"
         }
         
         #dictionary to keep the initial and final mean particle momenta, as estimated from the T0T1 tof
@@ -2830,7 +2826,7 @@ class BeamAnalysis:
         self.particle_mom_final_mean_err = {"electron": 0,"muon": 0,"pion": 0,"proton": 0,"deuteron":0,"helium3":0,"tritium":0,"lithium6":0}
         
         
-        for particle in ["Muons", "Pions", "Protons", "Deuteron"]:
+        for particle in ["Muons", "Pions", "Protons", "Deuteron", "Tritium"]:
             measured_tof_mean = self.particle_tof_mean[particles_tof_names[particle]]
             measured_tof_error = self.particle_tof_eom[particles_tof_names[particle]]
             
@@ -2848,6 +2844,10 @@ class BeamAnalysis:
                 elif particle == "Deuteron":
                     #heavier particles have to have more energy to reach T1 (and even more so, T5) 
                     momentum_guess=np.linspace(650, 1900, 36)
+
+                elif particle == "Tritium":
+                    #heavier particles have to have more energy to reach T1 (and even more so, T5) 
+                    momentum_guess=np.linspace(300, 1900, 36)
 
                 initial_momentum_th, final_momentum_th, T0T1_TOF_th, T0T4_TOF_th, T4T1_TOF_th = self.give_theoretical_TOF(particle, momentum_guess)
 
@@ -3932,7 +3932,7 @@ class BeamAnalysis:
                 ax.hist(self.df["tof_t0t4_corr"][self.df["is_tritium"]==1], bins = bins_tof_t0t4, histtype = "step", label = f"Tritium nuclei: tof = {popt_tritium_t0t4[1]:.2f} "+ r"$\pm$"+ f" {popt_tritium_t0t4[2]:.2f} ns")
                 ax.plot(bins_tof_t0t4, gaussian(bins_tof_t0t4, popt_tritium_t0t4[0], popt_tritium_t0t4[1], popt_tritium_t0t4[2]), "--", color = "k")
             except:
-                popt_tritium = [0, 0, 0]
+                popt_tritium_t0t4 = [0, 0, 0]
                 mean = self.df["tof_t0t4_corr"][self.df["is_tritium"]==1].mean()
                 std = self.df["tof_t0t4_corr"][self.df["is_tritium"]==1].std()
                 ax.hist(self.df["tof_t0t4_corr"][self.df["is_tritium"]==1], bins = bins_tof_t0t4, histtype = "step", label = f"Tritium nuclei: tof = {mean:.2f} "+ r"$\pm$"+ f" {std:.2f} ns")
@@ -3982,6 +3982,9 @@ class BeamAnalysis:
             
         if sum(self.df["is_deuteron"])>100:
             ax.plot(bins_tof_t0t4, gaussian(bins_tof_t0t4, popt_D_t0t4[0], popt_D_t0t4[1], popt_D_t0t4[2]), "--", color = "k")
+
+        if sum(self.df["is_tritium"])>100:
+            ax.plot(bins_tof_t0t4, gaussian(bins_tof_t0t4, popt_tritium_t0t4[0], popt_tritium_t0t4[1], popt_tritium_t0t4[2]), "--", color = "k")
             
             
         ax.set_ylabel("Number of events", fontsize = 18)
@@ -4050,7 +4053,7 @@ class BeamAnalysis:
             "proton": mean_proton_T0T4_tof if there_is_proton else 0,
             "deuteron": popt_D_t0t4[1] if sum(self.df["is_deuteron"])>100 else 0,
             "helium3": popt_He3[1] if sum(self.df["is_helium3"])>20 else 0,
-            "tritium": popt_tritium[1] if sum(self.df["is_tritium"])>20 else 0,
+            "tritium": popt_tritium_t0t4[1] if sum(self.df["is_tritium"])>20 else 0,
             "lithium6": popt_Li6[1] if sum(self.df["is_lithium6"])>20 else 0,
         }
         
@@ -4061,7 +4064,7 @@ class BeamAnalysis:
             "proton": std_proton_T0T4_tof if there_is_proton else 0,
             "deuteron": popt_D_t0t4[2] if sum(self.df["is_deuteron"])>100 else 0,
             "helium3": popt_He3[2] if sum(self.df["is_helium3"])>20 else 0,
-            "tritium": popt_tritium[2] if sum(self.df["is_tritium"])>20 else 0,
+            "tritium": popt_tritium_t0t4[2] if sum(self.df["is_tritium"])>20 else 0,
             "lithium6": popt_Li6[2] if sum(self.df["is_lithium6"])>20 else 0,    
         }
         
@@ -4072,7 +4075,7 @@ class BeamAnalysis:
             "proton": std_proton_T0T4_tof/np.sqrt(sum(self.df["is_proton"])) if there_is_proton else 0,
             "deuteron": popt_D_t0t4[2]/np.sqrt(sum(self.df["is_deuteron"])) if sum(self.df["is_deuteron"])>100 else 0,
             "helium3": popt_He3[2]/np.sqrt(sum(self.df["is_helium3"])) if sum(self.df["is_helium3"])>20 else 0,
-            "tritium": popt_tritium[2]/np.sqrt(sum(self.df["is_tritium"])) if sum(self.df["is_tritium"])>20 else 0,
+            "tritium": popt_tritium_t0t4[2]/np.sqrt(sum(self.df["is_tritium"])) if sum(self.df["is_tritium"])>20 else 0,
             "lithium6": popt_Li6[2]/np.sqrt(sum(self.df["is_lithium6"])) if sum(self.df["is_lithium6"])>20 else 0,
  
             

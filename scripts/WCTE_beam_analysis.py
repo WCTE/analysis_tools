@@ -17,7 +17,7 @@ import argparse
 import os
 
 # Number of events to read in debug mode
-DEBUG_N_EVENTS = 500000
+DEBUG_N_EVENTS = 5000
 
 
 def parse_args():
