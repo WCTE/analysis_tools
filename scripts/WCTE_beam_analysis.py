@@ -17,7 +17,7 @@ import argparse
 import os
 
 # Number of events to read in debug mode
-DEBUG_N_EVENTS = 5000
+DEBUG_N_EVENTS = 500000
 
 
 def parse_args():
@@ -81,7 +81,7 @@ for input_file in args.input_files:
 
     #Store into memory the number of events desired,
     # set require_t5 to False if you do not require that the particle reaches T5
-    ana.open_file(n_events, require_t5 = True, input_file = input_file)
+    ana.open_file(n_events, require_t5 = False, input_file = input_file)
 
     #Step 2: Adjust the 1pe calibration: need to check the accuracy on the plots
     ana.adjust_1pe_calibration()
@@ -102,6 +102,9 @@ for input_file in args.input_files:
     #at least 0.5% of muons and pions are above the cut line (at hiogh momentum). This is necessary in case the 
     #Number of particles is too high to clearly see a minimum between the muons and pions
     ana.tag_muons_pions_ACT35()
+
+    #some plotting to identify multiple particle events
+    ana.tag_multiple_particle_events()
 
     #This corrects any offset in the TOF (e.g. from cable length) that can cause the TOF 
     #of electrons to be different from L/c This has to be calibrated to give meaningful momentum 

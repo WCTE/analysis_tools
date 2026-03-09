@@ -373,6 +373,11 @@ class BeamAnalysis:
         act0_l, act1_l, act2_l, act3_l, act4_l, act5_l =  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float)
         act0_r, act1_r, act2_r, act3_r, act4_r, act5_r =  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float)
 
+        charge_t0_0, charge_t0_1, charge_t0_2, charge_t0_3, charge_t1_0, charge_t1_1 =  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float)
+        charge_t1_2, charge_t1_3, charge_t4_0, charge_t4_1 =  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float)
+        charge_t5_0, charge_t5_1, charge_t5_2, charge_t5_3, charge_t5_4, charge_t5_5, charge_t5_6, charge_t5_7 =  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float)
+        charge_t5_8, charge_t5_9, charge_t5_10, charge_t5_11, charge_t5_12, charge_t5_13, charge_t5_14, charge_t5_15 =  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float)
+
         total_TOF_charge =  np.full(nEvents, np.nan, dtype=float)
 
         act0_time_l, act0_time_r =  np.full(nEvents, np.nan, dtype=float),  np.full(nEvents, np.nan, dtype=float)
@@ -629,6 +634,8 @@ class BeamAnalysis:
 #                         pedestal = calibration["pedestal_mean"][calib_index]
                         gain, pedestal = calib_map[ch]
                         pe_vals[ch] = (q-pedestal)/gain 
+                    if (ch in t0_group) or (ch in t1_group) or (ch in t4_group):
+                        pe_vals[ch] = q 
 
             
             event_q_t0_or_t1_missing_tdc = False
@@ -791,6 +798,36 @@ class BeamAnalysis:
             act4_r[evt_idx] = pe_vals[21]
             act5_l[evt_idx] = pe_vals[22]
             act5_r[evt_idx] = pe_vals[23]
+
+            #add the charge for the T0, T1 and T4 PMTs 
+            charge_t0_0[evt_idx] = pe_vals[0]
+            charge_t0_1[evt_idx] = pe_vals[1]
+            charge_t0_2[evt_idx] = pe_vals[2]
+            charge_t0_3[evt_idx] = pe_vals[3]
+            charge_t1_0[evt_idx] = pe_vals[4]
+            charge_t1_1[evt_idx] = pe_vals[5]   
+            charge_t1_2[evt_idx] = pe_vals[6]
+            charge_t1_3[evt_idx] = pe_vals[7]
+            charge_t4_0[evt_idx] = pe_vals[42]
+            charge_t4_1[evt_idx] = pe_vals[43]
+            charge_t5_0[evt_idx] = pe_vals[48]
+            charge_t5_1[evt_idx] = pe_vals[49]
+            charge_t5_2[evt_idx] = pe_vals[50]
+            charge_t5_3[evt_idx] = pe_vals[51]
+            charge_t5_4[evt_idx] = pe_vals[52]
+            charge_t5_5[evt_idx] = pe_vals[53]
+            charge_t5_6[evt_idx] = pe_vals[54]
+            charge_t5_7[evt_idx] = pe_vals[55]
+            charge_t5_8[evt_idx] = pe_vals[56]
+            charge_t5_9[evt_idx] = pe_vals[57]
+            charge_t5_10[evt_idx] = pe_vals[58]
+            charge_t5_11[evt_idx] = pe_vals[59]
+            charge_t5_12[evt_idx] = pe_vals[60]
+            charge_t5_13[evt_idx] = pe_vals[61]
+            charge_t5_14[evt_idx] = pe_vals[62]
+            charge_t5_15[evt_idx] = pe_vals[63]
+
+
             
             spill_id = data["spill_counter"][evt_idx]
             spill_number[evt_idx] = spill_id
@@ -851,6 +888,7 @@ class BeamAnalysis:
         mu_tag_l, mu_tag_r = np.array(mu_tag_l), np.array(mu_tag_r) 
         
         is_kept = np.array(is_kept)
+
         
         data_dict = {
             "t0_time": t0_avgs,
@@ -876,6 +914,32 @@ class BeamAnalysis:
             "act3_r": act3_r,
             "act4_r": act4_r,
             "act5_r": act5_r,
+            "charge_t0_0": np.array(charge_t0_0),
+            "charge_t0_1": np.array(charge_t0_1),
+            "charge_t0_2": np.array(charge_t0_2),
+            "charge_t0_3": np.array(charge_t0_3),
+            "charge_t1_0": np.array(charge_t1_0),
+            "charge_t1_1": np.array(charge_t1_1),
+            "charge_t1_2": np.array(charge_t1_2),
+            "charge_t1_3": np.array(charge_t1_3),
+            "charge_t4_0": np.array(charge_t4_0),
+            "charge_t4_1": np.array(charge_t4_1),
+            "charge_t5_0": np.array(charge_t5_0),
+            "charge_t5_1": np.array(charge_t5_1),
+            "charge_t5_2": np.array(charge_t5_2),
+            "charge_t5_3": np.array(charge_t5_3),
+            "charge_t5_4": np.array(charge_t5_4),
+            "charge_t5_5": np.array(charge_t5_5),
+            "charge_t5_6": np.array(charge_t5_6),
+            "charge_t5_7": np.array(charge_t5_7),
+            "charge_t5_8": np.array(charge_t5_8),
+            "charge_t5_9": np.array(charge_t5_9),
+            "charge_t5_10": np.array(charge_t5_10),
+            "charge_t5_11": np.array(charge_t5_11),
+            "charge_t5_12": np.array(charge_t5_12),
+            "charge_t5_13": np.array(charge_t5_13),
+            "charge_t5_14": np.array(charge_t5_14),
+            "charge_t5_15": np.array(charge_t5_15),
             "event_id":event_id,
 #             "total_TOF_charge":total_TOF_charge,
             "act0_time_l": act0_time_l,
@@ -1102,7 +1166,57 @@ class BeamAnalysis:
         print(f"A total of {n_electrons} electrons are tagged with ACT02 out of {n_triggers}, i.e. {n_electrons/n_triggers * 100:.1f}% of the dataset")
         
         
+    def tag_multiple_particle_events(self):
+        '''Tagging the events with more than one particle, based on the presence of a higher charge than the Mip charge in T0, T1, T4 or T5.
+        A diagnostic plot of the total T0 charge vs TOF is saved to the global PDF.'''
         
+        # flag events with more than one hit
+        self.df["multiple_particles"] = (
+            self.df["t0_time_second_hit"].notna()
+            | self.df["t1_time_second_hit"].notna()
+            | self.df["t4_time_second_hit"].notna()
+            | (self.df["t5_time"].isna())
+        )
+
+        n_multiple_particles = sum(self.df["multiple_particles"])
+        n_triggers = len(self.df["multiple_particles"])
+        print(
+            f"A total of {n_multiple_particles} events are tagged as having multiple particles "
+            f"based on the presence of multiple hits in T0, T1, T4 or T5, out of {n_triggers}, "
+            f"i.e. {n_multiple_particles/n_triggers * 100:.1f}% of the dataset"
+        )
+
+        # diagnostic plot: total T0 charge (channels 0..3) vs TOF
+        t0_charge = self.df["charge_t0_0"]+ self.df["charge_t0_1"]+ self.df["charge_t0_2"]+ self.df["charge_t0_3"]
+        
+        fig, ax = plt.subplots(figsize=(8, 6))
+        x_bins = np.linspace(10, 50, 100)
+        y_bins = np.linspace(2000, 20000, 100)
+        h = ax.hist2d(self.df["tof"],t0_charge, bins=(x_bins, y_bins), norm=LogNorm())
+        
+    
+        ax.set_ylabel("Total T0 charge (QDC)", fontsize=18)
+        ax.set_xlabel("TOF (ns)", fontsize=18)
+        ax.set_title(
+            f"Run {self.run_number} ({self.run_momentum} MeV/c) - T0 charge vs TOF",
+            fontsize=20,
+        )
+        self.pdf_global.savefig(fig)
+        plt.close()
+
+        #for particle with TOF less than 17ns, plot a 1d histogram of the total T0 charge
+        fig, ax = plt.subplots(figsize=(8, 6))  
+        bins = np.linspace(10, 50, 100)
+        h, _, _ = ax.hist(t0_charge[self.df["tof"]<17], bins = y_bins, histtype = "step")
+        ax.set_xlabel("Total T0 charge (QDC)", fontsize=18)
+        ax.set_title(
+            f"Run {self.run_number} ({self.run_momentum} MeV/c) - Total T0 charge for particles with TOF < 17ns",
+            fontsize=20,
+        )
+        ax.grid()
+        self.pdf_global.savefig(fig)
+        plt.close()
+
     def tag_electrons_ACT35(self, cut_line = 0):
         '''Tagging the electrons based on the charge deposited in the downstream ACTs, to 'clean up the edges'''
         
@@ -3162,7 +3276,7 @@ class BeamAnalysis:
         
         ######### Now calculate the momentum for each trigger individually
         #The error on the tof is taken as the width of the electron tof distribution 
-        
+              
         self.df["initial_momentum"] = np.nan  # initialize column
         self.df["initial_momentum_error"] = np.nan  # initialize column
 
@@ -4138,9 +4252,16 @@ class BeamAnalysis:
         for col in self.df.columns:
             if col not in self.df_all.columns:
                 if col not in ["is_muon", "is_electron", "is_pion", "is_proton", "is_deuteron", "is_helium3", "is_tritium", "is_lithium6", "final_momentum", "final_momentum_error", "initial_momentum", "initial_momentum_error"]:
-                    self.df_all[col] = np.nan  # create empty column first if you want aligned length
-#                     Set the values of self.df when we are actually keeping the trigger. 
-                    self.df_all.loc[self.df.index, col] = self.df[col]
+                    # create empty column first so the DataFrame lengths match
+                    self.df_all[col] = np.nan
+                    # copy values from df; cast bools to a numeric type to avoid
+                    # FutureWarning about incompatible dtype
+                    values = self.df[col]
+                    if values.dtype == bool:
+                        print(f"Converting boolean column {col} to int for ROOT compatibility.")
+                        # converting to float keeps compatibility with NaNs
+                        values = values.astype(np.float64)
+                    self.df_all.loc[self.df.index, col] = values
 
         
         self.df_all["is_kept"] = self.df_all["is_kept"].astype(np.int32) 
@@ -4781,16 +4902,10 @@ class BeamAnalysis:
         ax.set_ylabel("Number of events", fontsize=20)
         ax.set_xlabel("T4L-T4R", fontsize=20)
         ax.set_xlim(-15,15)
-#         ax.set_ylim(0,50)
-#         ax.set_ylim(-220, -150)
-#         ax.set_xlim(-250,-125)
-#         ax.set_ylim(20, 60)
         ax.legend(fontsize=16)
         ax.set_title(f"Run {self.run_number} ({self.run_momentum} MeV/c)") #max(df_with_diffs["spill_number"])}")
         self.pdf_global.savefig(fig)
         plt.close()
-        
-        print("ok")
         
         fig, ax = plt.subplots(figsize = (8, 6))
         #I want to plot the tof of protons as a function of the registered T4 hit 
