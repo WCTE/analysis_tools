@@ -27,6 +27,15 @@ from analysis_tools.beam_monitors_pid import BeamAnalysis
 # Optional: import utilities for reference or custom analysis
 # from analysis_tools.beam_monitors_pid import constants, file_utils, flag_utils, detector_utils, fitting
 
+# sanity check: if the import failed inside the package we would previously
+# have obtained ``BeamAnalysis = None`` and the call below would raise the
+# confusing ``'NoneType' object is not callable`` error.  Fail fast with a
+# clearer message instead.
+if BeamAnalysis is None:
+    raise ImportError("BeamAnalysis class could not be imported; "
+                      "check that the beam_monitors_pid package and its "
+                      "dependencies are installed correctly")
+
 # Import general analysis tools
 from analysis_tools import ReadBeamRunInfo
 
@@ -79,10 +88,7 @@ def main():
         n_events = DEBUG_N_EVENTS
 
     # Set default output directory if not provided
-    output_dir = args.output_dir if args.output_dir else "."
-
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
+    output_dir = args.output_dir if args.output_dir else f"./beam_output_R{run_number}"
 
     # Auto-discover input files if not provided
     input_files = args.input_files
