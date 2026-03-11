@@ -46,14 +46,15 @@ __all__ = [
 
 # Import main class and submodules
 try:
-    from beam_monitors_pid.beam_analysis import BeamAnalysis
+    # ``.`` ensures we import from the current package, not a top-level name
+    from .beam_analysis import BeamAnalysis
 except ImportError:
     # Graceful fallback if BeamAnalysis not yet created
     BeamAnalysis = None
 
-# Import utility modules
-from beam_monitors_pid import constants
-from beam_monitors_pid import file_utils
-from beam_monitors_pid import flag_utils
-from beam_monitors_pid import detector_utils
-from beam_monitors_pid import fitting
+# Import utility modules (relative names preserve package nesting)
+from . import constants
+from . import file_utils
+from . import flag_utils
+from . import detector_utils
+from . import fitting
