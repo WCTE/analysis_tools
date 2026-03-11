@@ -45,12 +45,10 @@ __all__ = [
 ]
 
 # Import main class and submodules
-try:
-    # ``.`` ensures we import from the current package, not a top-level name
-    from .beam_analysis import BeamAnalysis
-except ImportError:
-    # Graceful fallback if BeamAnalysis not yet created
-    BeamAnalysis = None
+# Import the main class directly.  If the module fails to load due to a
+# missing dependency or a syntax error we want the ImportError to surface so
+# users see the real problem instead of quietly receiving ``None`` here.
+from .beam_analysis import BeamAnalysis
 
 # Import utility modules (relative names preserve package nesting)
 from . import constants
