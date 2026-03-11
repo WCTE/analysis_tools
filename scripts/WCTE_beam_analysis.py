@@ -45,8 +45,8 @@ def parse_args():
         help="Run number to analyse"
     )
     parser.add_argument(
-        "-i", "--input_files", required=True, nargs='+',
-        help="Path(s) to WCTEReadoutWindows ROOT file(s)"
+        "-i", "--input_files", required=False, nargs='+',
+        help="Path(s) to WCTEReadoutWindows ROOT file(s); if omitted the script will try to locate files on EOS by run number"
     )
     parser.add_argument(
         "-o", "--output_dir", required=True,
@@ -87,10 +87,15 @@ def main():
     # Auto-discover input files if not provided
     input_files = args.input_files
     if not input_files:
-        # TODO: Implement auto-discovery logic based on run number
-        # For now, raise an error
-        print("ERROR: --input_files must be specified (auto-discovery not yet implemented)")
-        sys.exit(1)
+        # simple glob search on EOS; adjust pattern if your directory layout differs
+        import glob
+        pattern = f"/eos/experiment/wcte/data/**/WCTE*R{run_number}*.root"
+        candidates = glob.glob(pattern, recursive=True)
+        if not candidates:
+            print(f"ERROR: no input files found matching pattern {pattern}")
+            sys.exit(1)
+        input_files = sorted(candidates)
+        print(f"Auto-discovered {len(input_files)} file(s) for run {run_number}")
 
     # Process each input file
     for input_file in input_files:
