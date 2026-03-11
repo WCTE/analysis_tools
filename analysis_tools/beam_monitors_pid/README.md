@@ -4,6 +4,11 @@
 
 The original `beam_monitors_pid.py` file (~4,900 lines) has been refactored into a modular, maintainable package structure. Each module focuses on a specific functional area, making the codebase easier to understand, test, and extend.
 
+Run information used by `ReadBeamRunInfo` is now expected to live inside the
+package under `beam_monitors_pid/data/google_sheet_beam_data.json`.  A
+placeholder file is provided and the loader will fall back to the legacy EOS
+location for backward compatibility.
+
 ## Package Structure
 
 ```

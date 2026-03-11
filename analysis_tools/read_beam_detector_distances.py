@@ -14,12 +14,30 @@ import json
 
 
 class ReadBeamRunInfo:
-    """Reads in the run information stored in the json file"""
-    def __init__(self):
-        #We have changed the place where the google sheet json is stored because of permission issues, will revert back soon, 
-        #with open("/eos/experiment/wcte/configuration/run_info/google_sheet_beam_data.json") as f:
-        
-        with open("/eos/user/a/acraplet/analysis_tools/include/google_sheet_beam_data.json") as f:
+    """Reads in the run information stored in a json file.
+
+    By default the JSON file is expected to live inside the package under
+    ``beam_monitors_pid/data/google_sheet_beam_data.json``.  This allows the
+    data to be shipped with the module and referenced using a relative path.
+
+    If no package-local file is found the code falls back to the legacy EOS
+    location used in earlier versions.  The constructor also accepts an explicit
+    path for maximum flexibility (useful in tests).
+    """
+
+    def __init__(self, path: Union[str, Path] = None):
+        # determine default location within the package
+        pkg_dir = Path(__file__).parent
+        default_pkg_path = pkg_dir / "data" / "google_sheet_beam_data.json"
+
+        if path is None:
+            if default_pkg_path.exists():
+                path = default_pkg_path
+            else:
+                # legacy location (kept for backwards compatibility)
+                path = Path("/eos/user/a/acraplet/analysis_tools/include/google_sheet_beam_data.json")
+
+        with open(path) as f:
             self.runs = json.load(f)
 
     def get_info_run_number(self, run_number):

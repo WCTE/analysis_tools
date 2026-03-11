@@ -4,6 +4,16 @@
 
 The large `beam_monitors_pid.py` file has been split into a well-organized package structure. Here's how to update your code.
 
+**Run information JSON:**
+The run configuration previously resided at a hardcoded EOS path
+`/eos/user/a/acraplet/analysis_tools/include/google_sheet_beam_data.json`.
+In the refactored package the file should live alongside the code under
+`beam_monitors_pid/data/google_sheet_beam_data.json`.  The `ReadBeamRunInfo`
+class will automatically pick up the package-local copy, falling back to the
+legacy EOS location only if the packaged file is missing.  You can also pass
+a custom path to the constructor if needed.
+
+
 ## Before and After
 
 ### Before (Monolithic File)

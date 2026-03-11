@@ -1,0 +1,15 @@
+[]
+# Placeholder JSON file for run information.
+#
+# Replace this content with the actual beam run data exported from the Google
+# sheet.  The structure must be a list of dictionaries where each dictionary
+# contains keys such as "run_number", "beam_momentum", "act0", "act1",
+# etc., matching the format used in the legacy EOS file.
+#
+# Example entry:
+# {
+#     "run_number": "12345",
+#     "beam_momentum": "760",
+#     "act0": "1.03",
+#     ...
+# }
