@@ -1,4 +1,10 @@
-#this code holds the functions necessary for reading in the data and identifying the paticle types based on the WCTE beam monitors 
+"""
+Main BeamAnalysis class for WCTE particle identification.
+
+This module contains the BeamAnalysis class which orchestrates the
+particle identification workflow including detector data reading,
+calibration, particle tagging, TOF measurements, and momentum estimation.
+"""
 
 import os
 import json
@@ -11,274 +17,36 @@ from matplotlib.colors import LogNorm
 from scipy.optimize import curve_fit
 import pandas as pd
 import awkward as ak
-import pyarrow as pa, pyarrow.parquet as pq
+import pyarrow as pa
+import pyarrow.parquet as pq
 import gc
-
-#for the nice progress bar
 from tqdm import tqdm
-
-import os, shutil, subprocess, time, hashlib
-
+from typing import Dict
 from collections import defaultdict
 
-import sys
-# sys.path.append("/eos/user/a/acraplet/analysis_tools/")
-#the module for reading the yaml file with the detector distances and dimensions - from Bruno
+# Import from utility modules
+from beam_monitors_pid.constants import (
+    c, L, L_t0t4, L_t4t1,
+    particle_masses, reference_ids,
+    t0_group, t1_group, t4_group, t4_qdc_cut,
+    ACT0_group, ACT1_group, ACT2_group, ACT3_group, ACT4_group, ACT5_group,
+    act_eveto_group, act_tagger_group,
+    hc_group, hc_charge_cut,
+    t5_total_group,
+    CHANNEL_MAPPING,
+    helium3_tof_cut, tritium_tof_cut, lithium6_tof_cut
+)
+
+from beam_monitors_pid.file_utils import stage_local, to_xrootd, make_blocks
+from beam_monitors_pid.flag_utils import write_event_quality_mask, read_event_quality_mask, make_flag_map
+from beam_monitors_pid.detector_utils import deduplicate_tdc_hits, tdc_requirement_met, NotTheFirstHit
+from beam_monitors_pid.fitting import (
+    gaussian, three_gaussians, landau_gauss_convolution,
+    fit_gaussian, fit_three_gaussians
+)
+
+# Import DetectorDB from external module
 from read_beam_detector_distances import DetectorDB as db
-
-#Helper functions for file reading, written by Sahar
-def stage_local(src_eos_path: str, min_free_gb=20, min_bytes=1_000_000) -> str:
-    st = shutil.disk_usage("/tmp")
-    if st.free/1e9 < min_free_gb:
-        print("Not enough /tmp space; will stream from EOS")
-        return ""
-
-    # Use a unique local name to avoid collisions across different directories
-    h = hashlib.md5(src_eos_path.encode()).hexdigest()[:8]
-    local = f"/tmp/{os.path.basename(src_eos_path)}.{h}"
-
-    def good(p): return os.path.exists(p) and os.path.getsize(p) >= min_bytes
-
-    if not good(local):
-        if os.path.exists(local):
-            print("Cached local copy is too small; re-staging…")
-            os.remove(local)
-        print("Staging ROOT file to local disk (xrdcp)…")
-        subprocess.run(["xrdcp", "-f", to_xrootd(src_eos_path), local], check=True)
-        if not good(local):
-            raise OSError(f"Local file too small after xrdcp: {local}")
-
-    print("Using local copy:", local)
-    return local
-
-
-def to_xrootd(path: str) -> str:
-    assert path.startswith("/eos/")
-    return "root://eosuser.cern.ch//eos" + path[4:]
-
-
-def make_blocks(idx: np.ndarray, max_block: int):
-    if idx.size == 0:
-        return []
-    blocks = []
-    start = idx[0]
-    last  = idx[0]
-    for v in idx[1:]:
-        # if extending the block stays ≤ max_block, keep extending
-        if (v - start) < max_block:
-            last = v
-        else:
-            blocks.append((int(start), int(last)+1))
-            start = last = v
-    blocks.append((int(start), int(last)+1))
-    return blocks
-
-
-def make_flag_map(flags):
-    """
-    Build a deterministic mapping from flag name -> bit index (0..).
-    Uses sorted order of flag names so mapping is reproducible.
-    """
-    return {name: idx for idx, name in enumerate(sorted(flags))}
-
-def write_event_quality_mask(flag_dict,
-                             flag_map):
-    """
-    Pack flags into an integer bitmask.
-    
-    Parameters
-    - flag_dict: mapping of flag name -> truthy/falsey value (bool, 0/1, etc.)
-    - flag_map: optional mapping flag name -> bit index (int).
-                If None, a deterministic mapping from sorted(flag_dict.keys()) is used.
-                
-    Returns
-    - mask: int where bit i (value 2**i) is set when the corresponding flag is true.
-    """
-    if flag_map is None:
-        flag_map = make_flag_map(flag_dict.keys())
-
-    mask = 0
-    for flag_name, bit_idx in flag_map.items():
-        if flag_name not in flag_dict:
-            # Missing flags are treated as False (not set). Change if you want an error.
-            continue
-        if bool(flag_dict[flag_name]):
-            mask |= (1 << bit_idx)
-    return mask
-
-def read_event_quality_mask(mask,
-                            flag_map):
-    """
-    Unpack an integer bitmask back into a flag dictionary.
-    
-    Parameters
-    - mask: integer bitmask
-    - flag_map: mapping flag name -> bit index used when the mask was created
-    
-    Returns
-    - dict of flag name -> bool (True if that bit is set)
-    """
-    result: Dict[str, bool] = {}
-    for flag_name, bit_idx in flag_map.items():
-        result[flag_name] = bool(mask & (1 << bit_idx))
-    return result
-
-def _deduplicate_tdc_hits(ids, times):
-    "Function used to remove the later TDC hits and corresponding channel ids in case there are more than one"
-    seen = set()
-    keep_ids = []
-    keep_times = []
-    duplicates_removed = defaultdict(int)
-    stored_times = defaultdict(int)
-    
-    for ch, t in zip(ids, times):
-        if ch in seen:
-            #here we are counting how many events are being removed per channel
-            duplicates_removed[ch] += 1
-            if stored_times[ch] > t:
-                #in case they are not ordered correctly, this is important
-                raise NotTheFirstHit
-            continue
-        seen.add(ch)
-        keep_ids.append(ch)
-        keep_times.append(t)
-        stored_times[ch] = t
-
-    #in case we are not removing any channel, can give it back as is
-    if not duplicates_removed:
-        return ids, times, duplicates_removed
-
-    #ensure that the format on the way out is the same as on the way in
-    if isinstance(ids, np.ndarray):
-        ids_clean = np.asarray(keep_ids, dtype=ids.dtype)
-    else:
-        ids_clean = np.asarray(keep_ids)
-    if isinstance(times, np.ndarray):
-        times_clean = np.asarray(keep_times, dtype=times.dtype)
-    else:
-        times_clean = np.asarray(keep_times)
-    return ids_clean, times_clean, duplicates_removed
-
-
-def _tdc_requirement_met(group, tdc_set):
-    if group["mode"] == "any_pair":
-        return any(all(ch in tdc_set for ch in pair) for pair in group["channels"])
-    return all(ch in tdc_set for ch in group["channels"])
-
-
-#these are replaced with more accurate estimates using the travel time of all particles
-# proton_tof_cut = 17.5 #ad-hoc but works for most analyses
-# deuteron_tof_cut = 35 #35 #ad-hoc but works for most analyses
-helium3_tof_cut = 30 #30 #ad-hoc 
-tritium_tof_cut = 80 #ad-hoc 
-lithium6_tof_cut = 90 #ad-hoc 
-        
-
-#Default informations
-
-
-
-c = 0.299792458 #in m.ns^-1 do not change the units please as these are called throuhout
-L =  444.03 #4.3431
-L_t0t4 = 305.68 #2.9485
-L_t4t1 = 143.38 #1.3946
-
-# Particle masses in GeV/c^2
-particle_masses = {
-    "Electrons": 0.000511,
-    "Muons": 0.105658,
-    "Pions": 0.13957,
-    "Protons": 0.938272
-}
-
-reference_ids = (31, 46)          # (TDC ref for IDs <31, ref1 for IDs >31)
-t0_group     = [0, 1, 2, 3]       # must all be present
-t1_group     = [4, 5, 6, 7]       # must all be present
-t4_group     = [42, 43]           # must all be present
-t4_qdc_cut   = 200                # Only hits above this value
-ACT0_group   = (12, 13)                
-ACT1_group   = (14, 15)
-ACT2_group   = (16, 17)                
-
-ACT3_group   = (18, 19)                
-ACT4_group   = (20, 21)                 
-ACT5_group   = (22, 23)                
-act_eveto_group = [12, 13, 14, 15, 16, 17]   # ACT-eveto channels
-act_tagger_group = [18, 19, 20, 21, 22, 23]
-hc_group = [9, 10]
-hc_charge_cut = 150
-
-t5_b0_group = [48, 56]     #T5, also known as the TOF  detector
-t5_b1_group = [49, 57]     #Pairs of siPMs on either side of a given bar
-t5_b2_group = [50, 58]     #Both SiPMs need to be above threshold for at least 
-t5_b3_group = [51, 59]     #One of the bars for the event to be kept
-t5_b4_group = [52, 60]
-t5_b5_group = [53, 61]
-t5_b6_group = [54, 62]
-t5_b7_group = [55, 63]
-t5_total_group = [t5_b0_group, t5_b1_group, t5_b2_group, t5_b3_group,
-                  t5_b4_group, t5_b5_group, t5_b6_group, t5_b7_group]
-
-#basic functions, necessary in general
-def gaussian(x, amp, mean, sigma):
-    return amp * np.exp(-0.5 * ((x - mean) / sigma) ** 2)
-
-#three gaussian fit, necessary for fitting the T4 TOF distributions
-def three_gaussians(x, amp, mean, sigma,  amp1, mean1, sigma1,  amp2, mean2, sigma2):
-    return amp * np.exp(-0.5 * ((x - mean) / sigma) ** 2) + amp1 * np.exp(-0.5 * ((x - mean1) / sigma1) ** 2) + amp2 * np.exp(-0.5 * ((x - mean2) / sigma2) ** 2)
-
-
-def landau_gauss_convolution(x, amp, mpv, eta, sigma):
-    x = np.asarray(x, dtype=float)
-    sigma = max(float(sigma), 1e-3)
-    eta = max(float(eta), 1e-3)
-    # Keep the integration domain within the physical (positive) region to avoid
-    # numerical overflow in the Landau tail.
-    t_min = max(mpv - 5.0 * eta - 5.0 * sigma, 0.0)
-    t_max = mpv + 15.0 * eta + 5.0 * sigma
-    if t_max <= t_min:
-        t_max = t_min + max(eta, sigma, 1.0)
-    t = np.linspace(t_min, t_max, 2000)
-    with np.errstate(over="ignore", under="ignore"):
-        log_pdf = moyal.logpdf(t, loc=mpv, scale=eta)
-    # clip to keep exponentiation stable
-    log_pdf = np.clip(log_pdf, -700, 50)
-    landau_pdf = np.exp(log_pdf)
-    gauss = np.exp(-0.5 * ((x[:, None] - t[None, :]) / sigma) ** 2) / (
-        sigma * np.sqrt(2.0 * np.pi)
-    )
-    conv = np.trapz(landau_pdf * gauss, t, axis=1)
-    return amp * conv
-
-
-
-def fit_gaussian(entries, bin_centers):
-    # Get bin centers from edges
-
-    amp_guess = np.max(entries)
-    mean_guess = bin_centers[np.argmax(entries)]
-    sigma_guess = np.std(np.repeat(bin_centers, entries.astype(int)))
-
-    popt, pcov = curve_fit(gaussian, bin_centers, entries,
-                           p0=[amp_guess, mean_guess, sigma_guess])
-    
-    return popt, pcov
-
-
-def fit_three_gaussians(entries, bin_centers):
-    # Get bin centers from edges
-
-    amp_guess = np.max(entries)
-    mean_guess = bin_centers[np.argmax(entries)]
-    sigma_guess = np.std(np.repeat(bin_centers, entries.astype(int)))
-
-    popt, pcov = curve_fit(three_gaussians, bin_centers, entries,
-                           p0=[amp_guess, mean_guess, sigma_guess, amp_guess/100, mean_guess-4, sigma_guess,  amp_guess/100, mean_guess+4, sigma_guess])
-    
-    return popt, pcov
-
-
-
 
 class BeamAnalysis:
     def __init__(self, run_number, run_momentum, n_eveto, n_tagger, there_is_ACT5, output_dir, pdf_name=None):
