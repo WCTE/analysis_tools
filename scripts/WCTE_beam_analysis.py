@@ -62,7 +62,7 @@ def parse_args():
 
 def main():
     """Execute the beam analysis workflow."""
-    
+
     # Parse command-line arguments
     args = parse_args()
 
@@ -78,11 +78,22 @@ def main():
         print(f"Debug mode: limiting to {DEBUG_N_EVENTS} events")
         n_events = DEBUG_N_EVENTS
 
+    # Set default output directory if not provided
+    output_dir = args.output_dir if args.output_dir else "."
+
     # Create output directory if it doesn't exist
-    os.makedirs(args.output_dir, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Auto-discover input files if not provided
+    input_files = args.input_files
+    if not input_files:
+        # TODO: Implement auto-discovery logic based on run number
+        # For now, raise an error
+        print("ERROR: --input_files must be specified (auto-discovery not yet implemented)")
+        sys.exit(1)
 
     # Process each input file
-    for input_file in args.input_files:
+    for input_file in input_files:
 
         # Validate that input file matches run number
         if f"R{args.run_number}" not in os.path.basename(input_file):
@@ -91,21 +102,21 @@ def main():
 
         # Generate output filenames
         base = os.path.splitext(os.path.basename(input_file))[0]
-        output_filename = os.path.join(args.output_dir, f"{base}_beam_analysis.root")
+        output_filename = os.path.join(output_dir, f"{base}_beam_analysis.root")
         pdf_name = f"{base}_PID.pdf"
 
         print(f"\n{'#'*60}\n  {os.path.basename(input_file)}\n{'#'*60}")
 
         # ===== BEAM ANALYSIS WORKFLOW =====
-        
+
         # Initialize the BeamAnalysis object with run configuration
         ana = BeamAnalysis(
-            run_number, 
-            run_momentum, 
-            n_eveto_group, 
-            n_tagger_group, 
-            there_is_ACT5, 
-            args.output_dir, 
+            run_number,
+            run_momentum,
+            n_eveto_group,
+            n_tagger_group,
+            there_is_ACT5,
+            output_dir,
             pdf_name
         )
 
