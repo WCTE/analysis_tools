@@ -25,7 +25,7 @@ from typing import Dict
 from collections import defaultdict
 
 # Import from utility modules
-from beam_monitors_pid.constants import (
+from .constants import (
     c, L, L_t0t4, L_t4t1,
     particle_masses, reference_ids,
     t0_group, t1_group, t4_group, t4_qdc_cut,
@@ -37,16 +37,16 @@ from beam_monitors_pid.constants import (
     helium3_tof_cut, tritium_tof_cut, lithium6_tof_cut
 )
 
-from beam_monitors_pid.file_utils import stage_local, to_xrootd, make_blocks
-from beam_monitors_pid.flag_utils import write_event_quality_mask, read_event_quality_mask, make_flag_map
-from beam_monitors_pid.detector_utils import deduplicate_tdc_hits, tdc_requirement_met, NotTheFirstHit
-from beam_monitors_pid.fitting import (
+from .file_utils import stage_local, to_xrootd, make_blocks
+from .flag_utils import write_event_quality_mask, read_event_quality_mask, make_flag_map
+from .detector_utils import deduplicate_tdc_hits, tdc_requirement_met, NotTheFirstHit
+from .fitting import (
     gaussian, three_gaussians, landau_gauss_convolution,
     fit_gaussian, fit_three_gaussians
 )
 
-# Import DetectorDB from external module
-from read_beam_detector_distances import DetectorDB as db
+# Import DetectorDB from the sibling module in the parent package
+from ..read_beam_detector_distances import DetectorDB as db
 
 class BeamAnalysis:
     def __init__(self, run_number, run_momentum, n_eveto, n_tagger, there_is_ACT5, output_dir, pdf_name=None):

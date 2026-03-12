@@ -2,7 +2,9 @@
 
 ## Quick Start
 
-The large `beam_monitors_pid.py` file has been split into a well-organized package structure. Here's how to update your code.
+The large `beam_monitors_pid.py` file has been split into a well-organized package structure.  The original monolithic file has been **removed** from the repository to avoid clashes with the new package.  If you still have copies of the old file in your environment, delete or rename them – the new code lives under `analysis_tools/beam_monitors_pid/`.
+
+Here's how to update your code.
 
 **Run information JSON:**
 The run configuration previously resided at a hardcoded EOS path
