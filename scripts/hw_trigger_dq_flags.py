@@ -46,6 +46,45 @@ def mask_windows_missing_waveforms(good_channel_list, readout_window_events):
         
     return has_all_good_channels    
 
+def mask_windows_missing_waveforms_fast(good_channel_list, readout_window_events):
+    """
+    Vectorised version of the above
+    Inputs:
+    good_channel_list - list of integers in slot-position format (e.g. 203 for slot 2 position 3)
+    readout_window_events - awkward array with fields:
+        pmt_waveform_mpmt_slot_ids - awkward array of mPMT slot IDs for waveforms in each readout window
+        pmt_waveform_pmt_position_ids - awkward array of PMT position IDs for waveforms in each readout window
+    Returns:
+    has_all_good_channels - numpy bool array indicating whether one waveform for every good channel
+                            was present in the readout window
+    """
+    wf_mpmt_slot = readout_window_events["pmt_waveform_mpmt_slot_ids"]
+    wf_pmt_pos = readout_window_events["pmt_waveform_pmt_position_ids"]
+    wf_glbl_pmt_ids = (100 * wf_mpmt_slot) + wf_pmt_pos
+
+    n_windows = len(wf_glbl_pmt_ids)
+    counts = ak.num(wf_glbl_pmt_ids).to_numpy()
+    flat_ids = ak.flatten(wf_glbl_pmt_ids).to_numpy()
+    window_idx = np.repeat(np.arange(n_windows), counts)
+
+    # Filter to only hits from good channels
+    is_good = np.isin(flat_ids, good_channel_list)
+    good_flat_ids   = flat_ids[is_good]
+    good_window_idx = window_idx[is_good]
+
+    # Re-encode good channel IDs to compact 0..n_good-1 indices so the
+    # count matrix is n_windows x n_good — avoids large-matrix column selection
+    sorted_channels = np.sort(good_channel_list)
+    encoded_ids = np.searchsorted(sorted_channels, good_flat_ids) #gives the index of the good channel in the sorted list   
+
+    n_good = len(good_channel_list)
+    count_matrix = np.zeros((n_windows, n_good), dtype=np.int32)
+    np.add.at(count_matrix, (good_window_idx, encoded_ids), 1)
+
+    # A window is good iff every good channel appears exactly once
+    has_all_good_channels = np.all(count_matrix == 1, axis=1)
+
+    return has_all_good_channels
 
 if __name__ == "__main__":
     
@@ -136,7 +175,7 @@ if __name__ == "__main__":
                             raise Exception("PMTs with timing constants do not match between files in the same run")
                                         
                     #construct the good wcte pmt list
-                    good_wcte_pmts = (set(pmts_with_timing_constant) & set(slow_control_stable_channels)) - set(manually_masked_pmts)
+                    good_wcte_pmts = np.array(list(set(pmts_with_timing_constant) & set(slow_control_stable_channels)) - set(manually_masked_pmts))
                     
                     # Construct output path
                     base = os.path.splitext(os.path.basename(readout_window_file_name))[0]
@@ -160,12 +199,12 @@ if __name__ == "__main__":
                         })
                         print("There were",len(stable_channels_card_chan),"enabled channels not masked out")
                         print("There were",len(pmts_with_timing_constant),"channels with timing constants")
-                        print("In total there are",len(list(good_wcte_pmts)),"good channels with timing constants and stable in slow control")
+                        print("In total there are",len(good_wcte_pmts),"good channels with timing constants and stable in slow control")
                         
                         config_tree.extend({
                             "git_hash": [git_hash],
                             "run_configuration": [run_configuration],
-                            "good_wcte_pmts": ak.Array([list(good_wcte_pmts)]),
+                            "good_wcte_pmts": ak.Array([good_wcte_pmts]),
                             "wcte_pmts_with_timing_constant": ak.Array([pmts_with_timing_constant]),
                             "wcte_pmts_slow_control_stable": ak.Array([slow_control_stable_channels]),
                             "manually_masked_pmts": ak.Array([list(manually_masked_pmts)]),
@@ -217,7 +256,7 @@ if __name__ == "__main__":
                                 raise Exception("Batch start",start,"different events being compared between two files")
                             
                             #trigger level flags
-                            missing_waveforms_mask = mask_windows_missing_waveforms(good_wcte_pmts, readout_window_events)
+                            missing_waveforms_mask = mask_windows_missing_waveforms_fast(good_wcte_pmts, readout_window_events)
                             print("Checked",len(missing_waveforms_mask),"windows for missing waveforms", np.sum(~missing_waveforms_mask), "bad windows found")
                             
                             #make the trigger/window level bitmask 
@@ -263,7 +302,7 @@ if __name__ == "__main__":
     bad_hit_pct  = 100.0 * run_total_bad_hits  / run_total_hits  if run_total_hits  else 0.0
 
     metrics = {
-        "n_good_pmt_channels": int(len(good_wcte_pmts)),
+        "n_good_pmt_channels": int(good_wcte_pmts),
         "n_triggers":          int(run_total_triggers),
         "n_bad_triggers":      int(run_total_bad_triggers),
         "bad_trig_pct":        round(bad_trig_pct, 2),
