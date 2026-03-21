@@ -2754,20 +2754,36 @@ class BeamAnalysis:
             
            
         for col in self.df.columns:
-            if col not in self.df_all.columns:
-                
+            if col in ["is_muon", "is_electron", "is_pion", "is_proton",
+                       "is_deuteron", "is_helium3",
+                       "final_momentum", "final_momentum_error",
+                       "initial_momentum", "initial_momentum_error"]:
+                continue
 
-                if col not in ["is_muon", "is_electron", "is_pion", "is_proton", "is_deuteron", "is_helium3", "final_momentum", "final_momentum_error", "initial_momentum", "initial_momentum_error"]:
-                    # create empty column first so the DataFrame lengths match
-                    self.df_all[col] = np.nan
-                    # copy values from df; cast bools to a numeric type to avoid
-                    # FutureWarning about incompatible dtype
-                    values = self.df[col]
-                    if values.dtype == bool:
-                        print(f"Converting boolean column {col} to int for ROOT compatibility.")
-                        # converting to float keeps compatibility with NaNs
-                        values = values.astype(np.float64)
-                    self.df_all.loc[self.df.index, col] = values
+            values = self.df[col].copy()
+
+            # --- dtype handling ---
+            if pd.api.types.is_bool_dtype(values):
+                print(f"Converting boolean column {col} to int for ROOT compatibility.")
+                values = values.astype(np.int32)
+
+            if col in ["evt_quality_bitmask", "digi_issues_bitmask", "spill_number", "event_id"]:
+                print(f"Casting {col} to int32")
+                values = values.astype(np.int32)
+
+            # --- ensure column exists ---
+            if col not in self.df_all.columns:
+                self.df_all[col] = np.nan
+
+            # --- assign (this overwrites existing dtype) ---
+            self.df_all.loc[self.df.index, col] = values
+            
+
+       
+        self.df_all["event_id"] = self.df_all["event_id"].astype(np.int32)
+        self.df_all["evt_quality_bitmask"] = self.df_all["evt_quality_bitmask"].astype(np.int32)
+        self.df_all["digi_issues_bitmask"] = self.df_all["digi_issues_bitmask"].astype(np.int32)
+        self.df_all["spill_number"] = self.df_all["spill_number"].astype(np.int32)
 
         
         self.df_all["is_kept"] = self.df_all["is_kept"].astype(np.int32) 
@@ -2797,7 +2813,7 @@ class BeamAnalysis:
          }
         
         self.df_all = self.df_all.rename(columns=rename_map)
-        nTriggers = np.array([len(self.df_all["is_kept"]) ], dtype=np.float64)
+        nTriggers = np.array([len(self.df_all["is_kept"]) ], dtype=np.int64)
         self.df_all = self.df_all.drop("is_kept", axis = 1)
 
         
@@ -2813,7 +2829,7 @@ class BeamAnalysis:
             # Write scalar metadata as a separate tree (recommended)
             f["run_info"] = {
                 "run_number": np.array([self.run_number], dtype=np.int32),
-                "run_momentum": np.array([self.run_momentum], dtype=np.float64),          
+                "run_momentum": np.array([self.run_momentum], dtype=np.int64),          
                 "n_eveto": np.array([self.n_eveto], dtype=np.float64),
                 "n_tagger": np.array([self.n_tagger], dtype=np.float64),
                 "there_is_ACT5":np.array([self.there_is_ACT5], dtype = np.int32),
@@ -2828,17 +2844,17 @@ class BeamAnalysis:
                 "act_tagger_cut":np.array([self.act35_cut_pi_mu], dtype=np.float64),
                 "proton_tof_cut":np.array([self.proton_tof_cut], dtype=np.float64),
                 "deuteron_tof_cut":np.array([self.deuteron_tof_cut], dtype=np.float64),
-                "mu_tag_cut": np.array([self.mu_tag_cut], dtype=np.float64),
+                "mu_tag_cut": np.array([self.mu_tag_cut], dtype=np.int64),
                 "using_mu_tag_cut": np.array([self.using_mu_tag_cut], dtype=np.float64),
                 
                 #output the number of triggers identified as each particle, for reference 
                 #here we need to sum from the df dataframe and not the df_all which doesn't have the PID info
-                "n_electrons": np.array([sum(self.df["is_electron"])], dtype=np.float64),
-                "n_muons": np.array([sum(self.df["is_muon"])], dtype=np.float64),
-                "n_pions": np.array([sum(self.df["is_pion"])], dtype=np.float64),
-                "n_protons": np.array([sum(self.df["is_proton"])], dtype=np.float64),
-                "n_deuterium": np.array([sum(self.df["is_deuteron"])], dtype=np.float64),
-                "n_helium3": np.array([sum(self.df["is_helium3"])], dtype=np.float64),
+                "n_electrons": np.array([sum(self.df["is_electron"])], dtype=np.int32),
+                "n_muons": np.array([sum(self.df["is_muon"])], dtype=np.int32),
+                "n_pions": np.array([sum(self.df["is_pion"])], dtype=np.int32),
+                "n_protons": np.array([sum(self.df["is_proton"])], dtype=np.int32),
+                "n_deuterium": np.array([sum(self.df["is_deuteron"])], dtype=np.int32),
+                "n_helium3": np.array([sum(self.df["is_helium3"])], dtype=np.int32),
                 
 #                 "pion_purity":np.array([self.pion_purity], dtype=np.float64),
 #                 "pion_efficiency":np.array([self.pion_efficiency], dtype=np.float64),
