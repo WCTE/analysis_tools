@@ -192,6 +192,12 @@ t0_group     = [0, 1, 2, 3]       # must all be present
 t1_group     = [4, 5, 6, 7]       # must all be present
 t4_group     = [42, 43]           # must all be present
 t4_qdc_cut   = 200                # Only hits above this value
+T4_CORRECTION_BOUNDARY_LEFT_NS = -5.150
+T4_CORRECTION_BOUNDARY_RIGHT_NS = 2.800
+T4_CORRECTION_NEGATIVE_PEAK_SEED_NS = -8.850
+T4_CORRECTION_NOMINAL_PEAK_SEED_NS = -0.850
+T4_CORRECTION_POSITIVE_PEAK_SEED_NS = 6.650
+T4_CORRECTION_PEAK_WINDOW_HALF_WIDTH_NS = 3.0
 ACT0_group   = (12, 13)                
 ACT1_group   = (14, 15)
 ACT2_group   = (16, 17)                
@@ -273,6 +279,117 @@ def fit_three_gaussians(entries, bin_centers):
                            p0=[amp_guess, mean_guess, sigma_guess, amp_guess/100, mean_guess-4, sigma_guess,  amp_guess/100, mean_guess+4, sigma_guess])
     
     return popt, pcov
+
+
+def _first_hit_by_channel(channel_ids, values):
+    """Return the first recorded value for each channel in the event."""
+    first_hits = {}
+    for ch, value in zip(np.atleast_1d(channel_ids), np.atleast_1d(values)):
+        ch = int(ch)
+        if ch not in first_hits:
+            first_hits[ch] = float(value)
+    return first_hits
+
+
+def _median_in_peak_window(values_ns, seed_ns, half_width_ns):
+    """Estimate the peak center with a robust median inside a fixed window."""
+    values_ns = np.asarray(values_ns, dtype=float)
+    in_window = (
+        (values_ns >= seed_ns - half_width_ns)
+        & (values_ns <= seed_ns + half_width_ns)
+    )
+    if not np.any(in_window):
+        return None
+    return float(np.median(values_ns[in_window]))
+
+
+def _estimate_t4_timing_correction(data):
+    """
+    Estimate the fixed-boundary T4 timing correction from the file itself.
+
+    This mirrors the calibration script logic: use clean events to locate the
+    negative, nominal, and positive T4L-T4R peaks, then convert late hits back
+    to the nominal peak with fixed boundaries.
+    """
+    dt_samples = []
+    required_tdc_channels = tuple(t0_group + t1_group + t4_group)
+
+    for tdc_ids_evt, tdc_times_evt, qdc_ids_evt, qdc_charges_evt in zip(
+        data["beamline_pmt_tdc_ids"],
+        data["beamline_pmt_tdc_times"],
+        data["beamline_pmt_qdc_ids"],
+        data["beamline_pmt_qdc_charges"],
+    ):
+        tdc_first = _first_hit_by_channel(tdc_ids_evt, tdc_times_evt)
+        qdc_first = _first_hit_by_channel(qdc_ids_evt, qdc_charges_evt)
+
+        if not all(ch in tdc_first for ch in required_tdc_channels):
+            continue
+        if not all(tdc_first[ch] < -100.0 for ch in required_tdc_channels):
+            continue
+        if qdc_first.get(42, -np.inf) <= t4_qdc_cut:
+            continue
+        if qdc_first.get(43, -np.inf) <= t4_qdc_cut:
+            continue
+        if qdc_first.get(9, -np.inf) > 150.0 or qdc_first.get(10, -np.inf) > 100.0:
+            continue
+
+        dt_t4lr = tdc_first[42] - tdc_first[43]
+        if np.isfinite(dt_t4lr):
+            dt_samples.append(dt_t4lr)
+
+    if not dt_samples:
+        return None
+
+    dt_samples = np.asarray(dt_samples, dtype=float)
+    negative_peak_median = _median_in_peak_window(
+        dt_samples,
+        T4_CORRECTION_NEGATIVE_PEAK_SEED_NS,
+        T4_CORRECTION_PEAK_WINDOW_HALF_WIDTH_NS,
+    )
+    nominal_peak_median = _median_in_peak_window(
+        dt_samples,
+        T4_CORRECTION_NOMINAL_PEAK_SEED_NS,
+        T4_CORRECTION_PEAK_WINDOW_HALF_WIDTH_NS,
+    )
+    positive_peak_median = _median_in_peak_window(
+        dt_samples,
+        T4_CORRECTION_POSITIVE_PEAK_SEED_NS,
+        T4_CORRECTION_PEAK_WINDOW_HALF_WIDTH_NS,
+    )
+
+    if None in (negative_peak_median, nominal_peak_median, positive_peak_median):
+        return None
+
+    return {
+        "n_reference_events": int(dt_samples.size),
+        "boundary_left_ns": T4_CORRECTION_BOUNDARY_LEFT_NS,
+        "boundary_right_ns": T4_CORRECTION_BOUNDARY_RIGHT_NS,
+        "negative_peak_median_ns": negative_peak_median,
+        "nominal_peak_median_ns": nominal_peak_median,
+        "positive_peak_median_ns": positive_peak_median,
+        "right_late_delay_ns": nominal_peak_median - negative_peak_median,
+        "left_late_delay_ns": positive_peak_median - nominal_peak_median,
+    }
+
+
+def _apply_t4_timing_correction(t4_l_time, t4_r_time, correction):
+    """Apply the fixed-boundary T4 correction to a left/right time pair."""
+    if correction is None:
+        return t4_l_time, t4_r_time
+    if not np.isfinite(t4_l_time) or not np.isfinite(t4_r_time):
+        return t4_l_time, t4_r_time
+
+    dt_t4lr = t4_l_time - t4_r_time
+    t4_l_corr = float(t4_l_time)
+    t4_r_corr = float(t4_r_time)
+
+    if dt_t4lr < correction["boundary_left_ns"]:
+        t4_r_corr -= correction["right_late_delay_ns"]
+    elif dt_t4lr > correction["boundary_right_ns"]:
+        t4_l_corr -= correction["left_late_delay_ns"]
+
+    return t4_l_corr, t4_r_corr
 
 
 
@@ -465,6 +582,18 @@ class BeamAnalysis:
         
         pbar = tqdm(total=nEvents, desc="Reading in events", unit="evt")
         
+        t4_timing_correction = _estimate_t4_timing_correction(data)
+        self.t4_timing_correction = t4_timing_correction
+        if t4_timing_correction is None:
+            print("T4 timing correction could not be estimated for this file; keeping the original T4 times.")
+        else:
+            print(
+                "T4 timing correction enabled: "
+                f"{t4_timing_correction['n_reference_events']} clean events, "
+                f"right-late shift = {t4_timing_correction['right_late_delay_ns']:.3f} ns, "
+                f"left-late shift = {t4_timing_correction['left_late_delay_ns']:.3f} ns."
+            )
+
         t4_qdc_samples = {ch: [] for ch in t4_group}
 
         for evt_idx in range(nEvents):
@@ -524,6 +653,17 @@ class BeamAnalysis:
         
                 reference_time = ref0 if ch <= reference_ids[0] else ref1
                 corrected[ch] = t - reference_time
+
+            corrected[42], corrected[43] = _apply_t4_timing_correction(
+                corrected[42],
+                corrected[43],
+                t4_timing_correction,
+            )
+            corrected_second_hit[42], corrected_second_hit[43] = _apply_t4_timing_correction(
+                corrected_second_hit[42],
+                corrected_second_hit[43],
+                t4_timing_correction,
+            )
             
             for ch, q in zip(qdc_ids, qdc_charges):
                 if np.isnan(qdc_vals[ch]):
