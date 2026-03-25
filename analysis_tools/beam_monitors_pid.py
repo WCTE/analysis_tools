@@ -325,13 +325,9 @@ def _estimate_t4_timing_correction(data):
 
         if not all(ch in tdc_first for ch in required_tdc_channels):
             continue
-        if not all(tdc_first[ch] < -100.0 for ch in required_tdc_channels):
-            continue
         if qdc_first.get(42, -np.inf) <= t4_qdc_cut:
             continue
         if qdc_first.get(43, -np.inf) <= t4_qdc_cut:
-            continue
-        if qdc_first.get(9, -np.inf) > 150.0 or qdc_first.get(10, -np.inf) > 100.0:
             continue
 
         dt_t4lr = tdc_first[42] - tdc_first[43]
