@@ -292,7 +292,7 @@ def _first_hit_by_channel(channel_ids, values):
 
 
 def _median_in_peak_window(values_ns, seed_ns, half_width_ns):
-    """Estimate the peak center with a robust median inside a fixed window."""
+    """Estimate the peak center with median inside a fixed window."""
     values_ns = np.asarray(values_ns, dtype=float)
     in_window = (
         (values_ns >= seed_ns - half_width_ns)
@@ -304,13 +304,7 @@ def _median_in_peak_window(values_ns, seed_ns, half_width_ns):
 
 
 def _estimate_t4_timing_correction(data):
-    """
-    Estimate the fixed-boundary T4 timing correction from the file itself.
-
-    This mirrors the calibration script logic: use clean events to locate the
-    negative, nominal, and positive T4L-T4R peaks, then convert late hits back
-    to the nominal peak with fixed boundaries.
-    """
+    """ Use clean events to locate the negative, nominal, and positive T4L-T4R peaks, then convert late hits back to the nominal peak."""
     dt_samples = []
     required_tdc_channels = tuple(t0_group + t1_group + t4_group)
 
@@ -370,7 +364,7 @@ def _estimate_t4_timing_correction(data):
 
 
 def _apply_t4_timing_correction(t4_l_time, t4_r_time, correction):
-    """Apply the fixed-boundary T4 correction to a left/right time pair."""
+    """Apply the T4 correction to a left/right time pair."""
     if correction is None:
         return t4_l_time, t4_r_time
     if not np.isfinite(t4_l_time) or not np.isfinite(t4_r_time):
