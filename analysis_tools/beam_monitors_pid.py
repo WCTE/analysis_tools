@@ -919,6 +919,7 @@ class BeamAnalysis:
             index_ped = np.argmax(h)
             value_ped = 0.5 * (bins[index_ped] + bins[index_ped+1])
             #actually change the array: pedestal shifted: can do as many times as we want, will just substract 0 all the n>1 times we do it
+            #note that df and df_all are two separate dataframes so the fix must be applied to both 
             self.df[PMT] -= value_ped 
             self.df_all[PMT] -= value_ped 
 #             self.PMT_value_ped.append(value_ped)
