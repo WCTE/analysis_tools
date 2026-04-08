@@ -878,7 +878,8 @@ class BeamAnalysis:
         #need to make sure that the digitisation issues are also included !!
         self.df = self.df[self.df["digi_issues_bitmask"] == 0]
         
-        print(len(self.df), sum(self.df_all["is_kept"]))
+        print(len(self.df), sum(self.df_all["is_kept"]))            
+        self.run_analysis = True
             
             
         print(f"\n \n When T5 requirement is {self.require_t5_hit} the fraction of events kept for analysis is {len(self.df)/len(self.df_all) * 100}% \n \n")
@@ -901,7 +902,7 @@ class BeamAnalysis:
             #raise Exception("No triggers are accepted for analysis, exiting early")
             
             print("No triggers accepted for analysis, exiting the beam analysis code")
-            sys.exit(1)
+            self.run_analysis = False
         
         #this will be necessary for identifying events later
         self.is_kept = is_kept

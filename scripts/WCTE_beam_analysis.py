@@ -93,51 +93,54 @@ for input_file in args.input_files:
     #Store into memory the number of events desired,
     # set require_t5 to False if you do not require that the particle reaches T5
     ana.open_file(n_events, require_t5 = require_t5, input_file = input_file, output_file=output_filename)
-
-    #Step 2: Adjust the 1pe calibration: need to check the accuracy on the plots
-    ana.adjust_1pe_calibration()
-
-    #Step 3: proton and heavier particle tagging with T0-T1 TOF
-    #We need to tag protons before any other particles to avoid double-counting
-    ana.tag_protons_TOF()
-    #TODO: identify protons that produce knock-on electrons
-
-
-    #Step 4: tag electrons using ACT0-2 finding the minimum in the cut line
-    ana.tag_electrons_ACT02()
-
-    #Step 5: check visually that the electron and proton removal makes sense in ACT35
-    ana.plot_ACT35_left_vs_right()
     
-    #Step 5: check visually that the electron and proton removal makes sense in ACT02
-    ana.plot_ACT02_left_vs_right()
+    #In case no triggers are found then we do not need to run the analysis, otherwise we have already output the file in open file and closed the pdf properly 
+    if ana.run_analysis:
 
-    #Step 6: make the muon/pion separation, using the muon tagger in case 
-    #at least 0.5% of muons and pions are above the cut line (at hiogh momentum). This is necessary in case the 
-    #Number of particles is too high to clearly see a minimum between the muons and pions
-    ana.tag_muons_pions_ACT35()
+        #Step 2: Adjust the 1pe calibration: need to check the accuracy on the plots
+        ana.adjust_1pe_calibration()
+
+        #Step 3: proton and heavier particle tagging with T0-T1 TOF
+        #We need to tag protons before any other particles to avoid double-counting
+        ana.tag_protons_TOF()
+        #TODO: identify protons that produce knock-on electrons
 
 
-    #This corrects any offset in the TOF (e.g. from cable length) that can cause the TOF 
-    #of electrons to be different from L/c This has to be calibrated to give meaningful momentum 
-    #estimates later on
-    ana.measure_particle_TOF()
+        #Step 4: tag electrons using ACT0-2 finding the minimum in the cut line
+        ana.tag_electrons_ACT02()
 
-    #This function extimates both the mean momentum for each particle type and for each trigger
-    #We take the the error on the tof for each trigger is the resolution of the TS0-TS1 measurement
-    #Taken as the std of the gaussian fit to the electron TOF
-    ana.estimate_particle_momentum()
+        #Step 5: check visually that the electron and proton removal makes sense in ACT35
+        ana.plot_ACT35_left_vs_right()
 
-    
-    #estimate the number of events per POT
-    ana.plot_number_particles_per_POT()
-    
-    
-    #Check the number of triggers that are rejected and why
-    ana.plot_event_quality_bitmask()
+        #Step 5: check visually that the electron and proton removal makes sense in ACT02
+        ana.plot_ACT02_left_vs_right()
 
-    #Step X: end_analysis, necessary to cleanly close files 
-    ana.end_analysis()
+        #Step 6: make the muon/pion separation, using the muon tagger in case 
+        #at least 0.5% of muons and pions are above the cut line (at hiogh momentum). This is necessary in case the 
+        #Number of particles is too high to clearly see a minimum between the muons and pions
+        ana.tag_muons_pions_ACT35()
 
-    #Output to a root file
-    ana.output_to_root(output_filename)
+
+        #This corrects any offset in the TOF (e.g. from cable length) that can cause the TOF 
+        #of electrons to be different from L/c This has to be calibrated to give meaningful momentum 
+        #estimates later on
+        ana.measure_particle_TOF()
+
+        #This function extimates both the mean momentum for each particle type and for each trigger
+        #We take the the error on the tof for each trigger is the resolution of the TS0-TS1 measurement
+        #Taken as the std of the gaussian fit to the electron TOF
+        ana.estimate_particle_momentum()
+
+
+        #estimate the number of events per POT
+        ana.plot_number_particles_per_POT()
+
+
+        #Check the number of triggers that are rejected and why
+        ana.plot_event_quality_bitmask()
+
+        #Step X: end_analysis, necessary to cleanly close files 
+        ana.end_analysis()
+
+        #Output to a root file
+        ana.output_to_root(output_filename)
