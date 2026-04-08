@@ -892,11 +892,16 @@ class BeamAnalysis:
             
             for is_particle in ["is_electron", "is_muon", "is_pion", "is_proton", "is_deuteron", "is_helium3"]:
                 self.df[is_particle] = False
-
+            #plot the bitmask errors
+            self.plot_event_quality_bitmask()
             
             self.output_to_root(output_file, scalar_info = False)
             self.end_analysis()
-            raise Exception("No triggers are accepted for analysis, exiting early")
+            #avoid throwing an exception, exiting instead 
+            #raise Exception("No triggers are accepted for analysis, exiting early")
+            
+            print("No triggers accepted for analysis, exiting the beam analysis code")
+            sys.exit(1)
         
         #this will be necessary for identifying events later
         self.is_kept = is_kept
@@ -1236,7 +1241,11 @@ class BeamAnalysis:
         act_tagger_r =self.df["act0_r"]+self.df["act1_r"]+self.df["act2_r"]
         
         h = ax.hist2d(act_tagger_l, act_tagger_r, bins = (bins, bins),norm=LogNorm())
-        fig.colorbar(h[3], ax=ax)
+        
+        try:
+            fig.colorbar(h[3], ax=ax)
+        except:
+            print("Not adding colorbar, probably empty data")
         
         if cut_line != None:
                 ax.plot(bins, cut_line - bins, "r--", label = f"{cut_line_label} cut line: ACT0-2 = {cut_line:.1f} PE")
@@ -1244,7 +1253,11 @@ class BeamAnalysis:
         ax.set_xlabel("ACT0-2 left (PE)", fontsize = 18)
         ax.set_ylabel("ACT0-2 right (PE)", fontsize = 18)
         ax.set_title(f"Run {self.run_number} ({self.run_momentum} MeV/c)\nACT0-2 all particles", fontsize = 20)
-        self.pdf_global.savefig(fig)
+        
+        try:
+            self.pdf_global.savefig(fig)
+        except:
+            print("Not outputing figure of ACT35")
 
         plt.close()
         
@@ -2944,10 +2957,10 @@ class BeamAnalysis:
 #             results["n_lithium6"] =   np.array([sum(self.df_all["is_lithium6"])], dtype=np.float64)   
 #             results["n_tritium"] =   np.array([sum(self.df_all["is_tritium"])], dtype=np.float64)   
 
-            results["n_triggers_total"] = nTriggers  
-            
-            
-            f["scalar_results"] = results 
+                results["n_triggers_total"] = nTriggers  
+
+
+                f["scalar_results"] = results 
             
             print(f"Saved output file to {output_name}")
             
