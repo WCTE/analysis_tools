@@ -390,7 +390,7 @@ class BeamAnalysis:
         _, _, deuteron_tof_cut_array, _, _ =self.give_theoretical_TOF("Deuteron", np.array([abs(self.run_momentum) * 1.15])) #the smallest TOF value for a deuteron, considered to be the TOF at 110% of the theoretical proton momentum
 
         #Implement a TOF cut based on theoretical values for Helium3 as well
-        _, _, helium3_tof_cut_array, _, _ =self.give_theoretical_TOF("Helium3", np.array([abs(self.run_momentum) * 2 * 1.15]), verbose = True) #the smallest TOF value for a helium3, considered to be the TOF at 110% of the theoretical helium3 momentum which is twice the beamline momentum since the helium3 has twice the charge
+        _, _, helium3_tof_cut_array, _, _ =self.give_theoretical_TOF("Helium3", np.array([abs(self.run_momentum) * 2 * 1.15])) #the smallest TOF value for a helium3, considered to be the TOF at 110% of the theoretical helium3 momentum which is twice the beamline momentum since the helium3 has twice the charge
 
 
         electron_tof_offset = 0.67 #ns
@@ -2053,7 +2053,7 @@ class BeamAnalysis:
         #read the detector positions and dimensions from the yaml file 
         det_module = db.from_yaml("../include/wcte_beam_detectors.yaml")
 
-        print(particle)
+    
         
         if self.run_momentum < 0:
             if particle == "Electrons":
@@ -2536,15 +2536,18 @@ class BeamAnalysis:
         self.particle_mom_final_mean_t0t4_err_minus = {"electron": 0,"muon": 0,"pion": 0,"proton": 0,"deuteron":0,"helium3":0}
         self.particle_mom_final_mean_t0t4_err_plus  = {"electron": 0,"muon": 0,"pion": 0,"proton": 0,"deuteron":0,"helium3":0}
 
+        #Make the TOF error a constant fraction of the sigma so the electron TOF uncertainty is 0.05ns (it should be the smallest)
+        factor_uncertainty = 0.05/self.particle_tof_std["electron"]
+
         for particle in ["Muons", "Pions", "Protons", "Deuteron", "Helium3"]:
 
             measured_tof_mean = self.particle_tof_mean[particles_tof_names[particle]]
 
             
-            measured_tof_error = 0.05 #self.particle_tof_eom[particles_tof_names[particle]]
+            measured_tof_error = factor_uncertainty * self.particle_tof_std[particles_tof_names[particle]]
 
             measured_tof_t0t4_mean = self.particle_tof_t0t4_mean[particles_tof_names[particle]]
-            measured_tof_t0t4_error = 0.05 #self.particle_tof_t0t4_eom[particles_tof_names[particle]]
+            measured_tof_t0t4_error = factor_uncertainty * self.particle_tof_t0t4_std[particles_tof_names[particle]]
 
             if measured_tof_mean >= 0.2:
 
