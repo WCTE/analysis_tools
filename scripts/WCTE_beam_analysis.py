@@ -88,7 +88,7 @@ for input_file in args.input_files:
     print(f"\n{'#'*60}\n  {os.path.basename(input_file)}\n{'#'*60}")
 
     #Set up a beam analysis class
-    ana = BeamAnalysis(run_number, run_momentum, n_eveto_group, n_tagger_group, there_is_ACT5, args.output_dir, pdf_name, is_beam_paper_analysis = True)
+    ana = BeamAnalysis(run_number, run_momentum, n_eveto_group, n_tagger_group, there_is_ACT5, args.output_dir, pdf_name, is_beam_paper_analysis = False)
 
     #Store into memory the number of events desired,
     # set require_t5 to False if you do not require that the particle reaches T5
@@ -134,6 +134,15 @@ for input_file in args.input_files:
 
         #estimate the number of events per POT
         ana.plot_number_particles_per_POT()
+
+        #When working towards the beam paper, refine the momentum measurement by making a tigheter selection
+
+        try:
+            if ana.is_beam_paper_analysis:
+                ana.refine_particle_momentum_using_TOF()
+        except: 
+            print("We could not refine the momentum estimate")
+            continue
 
 
         #Check the number of triggers that are rejected and why
