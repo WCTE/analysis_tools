@@ -3660,10 +3660,10 @@ class BeamAnalysis:
             for prefix, d in [("tof_mean", self.particle_tof_mean),
                   ("tof_std", self.particle_tof_std),
                   ("tof_eom", self.particle_tof_eom),
-                  ("momentum_mean", self.particle_mom_mean),
-                  ("momentum_eom", self.particle_mom_mean_err),
-                  ("momentum_after_beam_window_mean", self.particle_mom_final_mean),
-                  ("momentum_after_beam_window_eom", self.particle_mom_final_mean_err)]:
+                  ("momentum_at_CERN_pipe_mean", self.particle_mom_mean),
+                  ("momentum_at_CERN_pipe_eom", self.particle_mom_mean_err),
+                  ("momentum_at_WCTE_window_mean", self.particle_mom_final_mean),
+                  ("momentum_at_WCTE_window_eom", self.particle_mom_final_mean_err)]:
                 for key, value in d.items():
                     results[f"{prefix}_{key}"] = np.array([value], dtype=np.float64)
 
@@ -3815,38 +3815,40 @@ class BeamAnalysis:
                     ("tof_std", self.particle_tof_std),
                     ("tof_eom", self.particle_tof_eom),
 
-                    ("momentum_mean", self.particle_mom_mean),
+                    ("momentum_at_CERN_pipe_mean", self.particle_mom_mean),
 
-                    ("momentum_eom_minus", self.particle_mom_mean_err_minus),
-                    ("momentum_eom_plus",  self.particle_mom_mean_err_plus),
+                    # ("momentum_at_CERN_pipe_err", self.particle_mom_mean_eom),
 
-                    ("momentum_after_beam_window_mean", self.particle_mom_final_mean),
-
-                    ("momentum_after_beam_window_eom_minus",
+                    ("momentum_at_CERN_pipe_err_minus",
+                    self.particle_mom_mean_err_minus),
+                    ("momentum_at_CERN_pipe_err_plus",
+                    self.particle_mom_mean_err_plus),
+                    
+                    ("momentum_at_WCTE_window_mean", self.particle_mom_final_mean),
+                    ("momentum_at_WCTE_window_err_minus",
                     self.particle_mom_final_mean_err_minus),
-
-                    ("momentum_after_beam_window_eom_plus",
+                    ("momentum_at_WCTE_window_err_plus",
                     self.particle_mom_final_mean_err_plus),
 
                     ("tof_t0t4_mean", self.particle_tof_t0t4_mean),
                     ("tof_t0t4_std", self.particle_tof_t0t4_std),
                     ("tof_t0t4_eom", self.particle_tof_t0t4_eom),
 
-                    ("momentum_t0t4_mean", self.particle_mom_mean_t0t4),
+                    ("momentum_t0t4_at_CERN_pipe_mean", self.particle_mom_mean_t0t4),
 
-                    ("momentum_t0t4_eom_minus",
+                    ("momentum_t0t4_at_CERN_pipe_err_minus",
                     self.particle_mom_mean_t0t4_err_minus),
 
-                    ("momentum_t0t4_eom_plus",
+                    ("momentum_t0t4_at_CERN_pipe_err_plus",
                     self.particle_mom_mean_t0t4_err_plus),
 
-                    ("momentum_after_beam_window_t0t4_mean",
+                    ("momentum_t0t4_at_WCTE_window_mean",
                     self.particle_mom_final_mean_t0t4),
 
-                    ("momentum_after_beam_window_t0t4_eom_minus",
+                    ("momentum_t0t4_at_WCTE_window_err_minus",
                     self.particle_mom_final_mean_t0t4_err_minus),
 
-                    ("momentum_after_beam_window_t0t4_eom_plus",
+                    ("momentum_t0t4_at_WCTE_window_err_plus",
                     self.particle_mom_final_mean_t0t4_err_plus)
 
                 ]:

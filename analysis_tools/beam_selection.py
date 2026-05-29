@@ -274,13 +274,61 @@ _VARIABLE_ALIASES = {
     "act_tagger":   "vme_act_tagger",
     "tof":          "vme_tof_corr",
     "mu_tag_total": "vme_mu_tag_total",
+    "act_0_charge": "vme_act0_l_charge",
+
 }
+
+
+
 
 _VARIABLE_UNITS = {
     "vme_act_eveto":    "PE",
     "vme_act_tagger":   "PE",
     "vme_tof_corr":     "ns",
     "vme_mu_tag_total": "a.u.",
+    "vme_act0_l_charge": "PE",
+    'vme_t0_time': "ns",
+    'vme_t1_time': "ns",
+    'vme_t4_time': "ns",
+    'vme_t0_time_second_hit': "ns",
+    'vme_t1_time_second_hit': "ns",
+    'vme_t4_time_second_hit': "ns",
+    'vme_time_t0_0': "ns",
+    'vme_time_t0_1': "ns",
+    'vme_time_t0_2': "ns",
+    'vme_time_t0_3': "ns",
+    'vme_time_t1_0': "ns",
+    'vme_time_t1_1': "ns",
+    'vme_time_t1_2': "ns",
+    'vme_time_t1_3': "ns",
+    'vme_time_t4_0': "ns",
+    'vme_time_t4_1': "ns",
+    'vme_t5_time': "ns",
+    'vme_t4_l_time': "ns",
+    'vme_t4_r_time': "ns",
+    'vme_t4_l_second_hit': "ns",
+    'vme_t4_r_second_hit': "ns",
+    'vme_act0_l_charge': "PE",
+    'vme_act1_l_charge': "PE",
+    'vme_act2_l_charge': "PE",
+    'vme_act3_l_charge': "PE",
+    'vme_act4_l_charge': "PE",
+    'vme_act5_l_charge': "PE",
+    'vme_act0_r_charge': "PE",
+    'vme_act1_r_charge': "PE",
+    'vme_act2_r_charge': "PE",
+    'vme_act3_r_charge': "PE",
+    'vme_act4_r_charge': "PE",
+    'vme_act5_r_charge': "PE",
+    'vme_act0_l_time': "ns",
+    'vme_act0_r_time': "ns",
+    'vme_tof_t0t1': "ns",
+    'vme_tof_t0t4': "ns",
+    'vme_tof_t4t1': "ns",
+    'vme_tof_t0t5': "ns",
+    'vme_tof_t1t5': "ns",
+    'vme_mu_tag_l_charge': "a.u.",
+    'vme_mu_tag_r_charge': "a.u."
 }
 
 
