@@ -725,11 +725,12 @@ class BeamAnalysis:
                 #checking if we have a second hit in the T5
                 w0 = corrected_second_hit[ch0]
                 w1 = corrected_second_hit[ch1]
-
-                if not np.isnan(v0) and not np.isnan(v1):
+                #implementing a 10ns coincidence between the two PMTs on the same bar
+                if not np.isnan(v0) and not np.isnan(v1) and abs(v0-v1) < 10:
                     t5_bar_means.append(0.5 * (v0 + v1))
-                if not np.isnan(w0) and not np.isnan(w1):
-                    t5_bar_means.append(0.5 * w0 + w1)
+
+                if not np.isnan(w0) and not np.isnan(w1) and abs(w0-w1) < 10:
+                    t5_bar_means.append(0.5 * (w0 + w1))
                  
             #in case there is no pairs of t5 hits 
             event_q_t5_missing_tdc = (len(t5_bar_means) == 0)
