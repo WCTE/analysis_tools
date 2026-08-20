@@ -33,7 +33,7 @@ def do_hit_processing(waveforms, waveform_times, waveform_cards, waveform_channe
     # SECTION 1) do the pulse finding
     # ============================================================
     start_time = time.time()
-    hit_wf_index, hit_indices_flat = do_pulse_finding_fast(waveform_channels)
+    hit_wf_index, hit_indices_flat = do_pulse_finding_fast(waveforms)
     good = (hit_indices >= min_peak_sample) & (hit_indices <= max_peak_sample)
     hit_wf_index = hit_wf_index[good]
     hit_indices_flat = hit_indices_flat[good]
